@@ -1,5 +1,6 @@
 "use client";
 
+import { Spinner } from "@/components/Spinner";
 import type { ProcessingStatus } from "@/types";
 
 interface HeaderProps {
@@ -45,7 +46,11 @@ export function Header({ status }: HeaderProps) {
 
       <div className="top-actions">
         <span className="status-pill" data-state={pill.state}>
-          <span className="dot" />
+          {pill.state === "working" ? (
+            <Spinner size="sm" tone="light" label={pill.label} />
+          ) : (
+            <span className="dot" />
+          )}
           <span>{pill.label}</span>
         </span>
         <button className="top-btn top-lang" title="Sprache">DE</button>

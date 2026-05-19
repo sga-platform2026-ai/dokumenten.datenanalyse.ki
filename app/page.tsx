@@ -6,7 +6,10 @@ import { AnalysisResult } from "@/components/AnalysisResult";
 import { FileUpload } from "@/components/FileUpload";
 import { Header } from "@/components/Header";
 import { LetterPreview } from "@/components/LetterPreview";
+import { ProcessingOverlay } from "@/components/ProcessingOverlay";
+import { ProcessingPanel } from "@/components/ProcessingPanel";
 import { useDocumentWorkflow, CHECK_ITEMS } from "@/hooks/useDocumentWorkflow";
+import { getProcessingMessage } from "@/lib/processingMessages";
 
 function getNow(): string {
   const d = new Date();
@@ -34,6 +37,7 @@ export default function HomePage() {
   } = useDocumentWorkflow();
 
   const letterRef = useRef<HTMLDivElement>(null);
+  const analyzingMsg = getProcessingMessage(status);
 
   useEffect(() => {
     if (status === "done" && letterRef.current) {
@@ -113,6 +117,16 @@ export default function HomePage() {
               fileName={fileName}
               mock={result.metadata.mock}
             />
+          ) : status === "analyzing" && analyzingMsg ? (
+            <aside className="card" id="data-card">
+              <div className="label">Erkannte Dokumentdaten</div>
+              <h2 style={{ marginBottom: 14 }}>Übersicht</h2>
+              <ProcessingPanel
+                title={analyzingMsg.title}
+                hint={analyzingMsg.hint}
+                compact
+              />
+            </aside>
           ) : (
             <aside className="card" id="data-card">
               <div className="label">Erkannte Dokumentdaten</div>
@@ -140,6 +154,13 @@ export default function HomePage() {
           </div>
         )}
       </main>
+
+      {status === "analyzing" && analyzingMsg && (
+        <ProcessingOverlay
+          title={analyzingMsg.title}
+          hint={analyzingMsg.hint}
+        />
+      )}
 
       <footer className="footer-note">
         <span>

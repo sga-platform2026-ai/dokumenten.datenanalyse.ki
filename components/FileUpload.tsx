@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { ProcessingPanel } from "@/components/ProcessingPanel";
+import { Spinner } from "@/components/Spinner";
 import type { CheckStates, CheckItem } from "@/hooks/useDocumentWorkflow";
+import { getProcessingMessage } from "@/lib/processingMessages";
 import type { ProcessingStatus } from "@/types";
 
 interface FileUploadProps {
@@ -50,6 +53,8 @@ export function FileUpload({
   const showGenBtn   = status === "readable";
   const showResetBtn = status !== "idle";
   const isGenerating = status === "analyzing";
+  const uploadBusy = status === "reading" || status === "checking";
+  const processingMsg = getProcessingMessage(status);
 
   return (
     <section className="card accent" id="upload-card">
@@ -96,8 +101,12 @@ export function FileUpload({
 
       {showFileRow && (
         <div className="file-row">
-          <div className="file-icon">
-            <span>{fileExt ?? "?"}</span>
+          <div className={`file-icon${uploadBusy ? " file-icon-busy" : ""}`}>
+            {uploadBusy ? (
+              <Spinner size="sm" label="Datei wird verarbeitet" />
+            ) : (
+              <span>{fileExt ?? "?"}</span>
+            )}
           </div>
           <div className="file-meta">
             <div className="nm">{fileName}</div>
@@ -111,6 +120,13 @@ export function FileUpload({
             </button>
           )}
         </div>
+      )}
+
+      {uploadBusy && processingMsg && (
+        <ProcessingPanel
+          title={processingMsg.title}
+          hint={processingMsg.hint}
+        />
       )}
 
       {errorMessage && (
@@ -129,7 +145,7 @@ export function FileUpload({
               return (
                 <div className="check" key={item.key} data-s={s}>
                   <span className="ic">
-                    {s === "active" && <span className="spin" />}
+                    {s === "active" && <Spinner size="sm" />}
                     {s === "done" && (
                       <svg viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round">
                         <path d="M5 12l5 5L20 7" />
@@ -160,7 +176,7 @@ export function FileUpload({
           >
             {isGenerating ? (
               <>
-                <span className="spin" style={{ borderColor: "#f3e9d4", borderTopColor: "transparent" }} />
+                <Spinner size="sm" tone="inverse" label="Brief wird formuliert" />
                 Brief wird formuliert …
               </>
             ) : (
