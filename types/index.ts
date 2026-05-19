@@ -1,5 +1,14 @@
+export interface QueuedFile {
+  id: string;
+  file: File;
+  name: string;
+  sizeLabel: string;
+  ext: string;
+}
+
 export type ProcessingStatus =
   | "idle"
+  | "selected"
   | "reading"
   | "checking"
   | "readable"

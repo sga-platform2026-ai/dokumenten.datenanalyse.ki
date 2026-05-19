@@ -1,8 +1,14 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { combineDocumentTexts, formatFileNamesLabel } from "@/lib/combineDocumentText";
 import { extractDocumentText, validateFileType } from "@/lib/documentExtraction";
-import type { AnalyzeResponse, ProcessingStatus } from "@/types";
+import {
+  fileExtensionLabel,
+  formatFileSizeLabel,
+  MAX_FILE_BYTES,
+} from "@/lib/fileMeta";
+import type { AnalyzeResponse, ProcessingStatus, QueuedFile } from "@/types";
 
 export type CheckState = "idle" | "active" | "done" | "error";
 
@@ -21,98 +27,186 @@ export const CHECK_ITEMS: CheckItem[] = [
 
 export type CheckStates = Record<string, CheckState>;
 
+function createQueuedFile(file: File): QueuedFile {
+  return {
+    id: crypto.randomUUID(),
+    file,
+    name: file.name,
+    sizeLabel: formatFileSizeLabel(file.size),
+    ext: fileExtensionLabel(file.name),
+  };
+}
+
 export function useDocumentWorkflow() {
-  const [status, setStatus]             = useState<ProcessingStatus>("idle");
-  const [fileName, setFileName]         = useState<string | null>(null);
-  const [fileSize, setFileSize]         = useState<string | null>(null);
-  const [fileExt, setFileExt]           = useState<string | null>(null);
+  const [status, setStatus] = useState<ProcessingStatus>("idle");
+  const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [result, setResult]             = useState<AnalyzeResponse | null>(null);
-  const [checkStates, setCheckStates]   = useState<CheckStates>({});
-  const [progress, setProgress]         = useState(0);
+  const [result, setResult] = useState<AnalyzeResponse | null>(null);
+  const [checkStates, setCheckStates] = useState<CheckStates>({});
+  const [progress, setProgress] = useState(0);
   const [extractedText, setExtractedText] = useState<string>("");
 
-  const isProcessing = ["reading", "checking", "readable", "analyzing"].includes(status);
+  const isProcessing = ["reading", "checking", "readable", "analyzing"].includes(
+    status,
+  );
 
   const setCheck = useCallback((key: string, state: CheckState) => {
     setCheckStates((prev) => ({ ...prev, [key]: state }));
   }, []);
 
-  const processFile = useCallback(async (file: File) => {
+  const addFiles = useCallback((incoming: FileList | File[]) => {
+    const list = Array.from(incoming);
+    if (list.length === 0) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setResult(null);
+
+    const accepted: QueuedFile[] = [];
+    const errors: string[] = [];
+
+    for (const file of list) {
+      if (file.size > MAX_FILE_BYTES) {
+        errors.push(`${file.name}: größer als 25 MB`);
+        continue;
+      }
+
+      const mime = validateFileType(file);
+      if (!mime) {
+        errors.push(`${file.name}: Dateityp nicht unterstützt`);
+        continue;
+      }
+
+      const duplicate = queuedFiles.some(
+        (q) => q.name === file.name && q.file.size === file.size,
+      );
+      if (duplicate) {
+        errors.push(`${file.name}: bereits in der Liste`);
+        continue;
+      }
+
+      accepted.push(createQueuedFile(file));
+    }
+
+    if (accepted.length > 0) {
+      setQueuedFiles((prev) => {
+        const next = [...prev, ...accepted];
+        setFileName(formatFileNamesLabel(next.map((f) => f.name)));
+        return next;
+      });
+      setStatus((prev) =>
+        prev === "reading" || prev === "checking" || prev === "analyzing"
+          ? prev
+          : "selected",
+      );
+    }
+
+    if (errors.length > 0) {
+      setErrorMessage(errors.join(" · "));
+      if (accepted.length === 0 && queuedFiles.length === 0) {
+        setStatus("error");
+      }
+    } else if (accepted.length > 0) {
+      setStatus("selected");
+    }
+  }, [queuedFiles]);
+
+  const removeFile = useCallback((id: string) => {
+    setQueuedFiles((prev) => {
+      const next = prev.filter((f) => f.id !== id);
+      setFileName(
+        next.length > 0 ? formatFileNamesLabel(next.map((f) => f.name)) : null,
+      );
+      if (next.length === 0) {
+        setStatus("idle");
+        setErrorMessage(null);
+      }
+      return next;
+    });
+  }, []);
+
+  const startDocumentCheck = useCallback(async () => {
+    if (queuedFiles.length === 0) {
+      return;
+    }
+
     setErrorMessage(null);
     setResult(null);
     setCheckStates({});
     setProgress(0);
     setExtractedText("");
-    setFileName(file.name);
-    setFileExt((file.name.split(".").pop() ?? "").toUpperCase().slice(0, 4));
-
-    const kb = Math.round(file.size / 1024);
-    setFileSize(kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`);
-
-    const mime = validateFileType(file);
-    if (!mime) {
-      setStatus("error");
-      setErrorMessage(
-        "Dateityp nicht unterstützt. Erlaubt: PDF, JPG, PNG, DOCX, TIFF.",
-      );
-      return;
-    }
-
     setStatus("reading");
 
     const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+    const total = queuedFiles.length;
 
-    // Step 1: read
     setCheck("read", "active");
-    const extraction = await extractDocumentText(file, {
-      onOcrProgress: (fraction) => {
-        setProgress(10 + Math.round(fraction * 15));
-      },
-    });
+    const extractedParts: { fileName: string; text: string }[] = [];
+
+    for (let index = 0; index < total; index += 1) {
+      const { file, name } = queuedFiles[index];
+      const baseProgress = 10 + Math.round((index / total) * 15);
+      const span = Math.max(1, Math.round(15 / total));
+
+      const extraction = await extractDocumentText(file, {
+        onOcrProgress: (fraction) => {
+          setProgress(baseProgress + Math.round(fraction * span));
+        },
+      });
+
+      if (!extraction.readable) {
+        setCheck("read", "error");
+        setStatus("error");
+        setErrorMessage(
+          `"${name}" ist nicht ausreichend lesbar – bitte bessere Datei hochladen oder entfernen.`,
+        );
+        return;
+      }
+
+      extractedParts.push({ fileName: name, text: extraction.text });
+      setProgress(10 + Math.round(((index + 1) / total) * 15));
+    }
+
     await delay(400);
     setCheck("read", "done");
     setProgress(25);
 
-    // Step 2: ocr / readability
     setStatus("checking");
     setCheck("ocr", "active");
     await delay(500 + Math.random() * 300);
-
-    if (!extraction.readable) {
-      setCheck("ocr", "error");
-      setStatus("error");
-      setErrorMessage("Dokument nicht ausreichend lesbar – bitte bessere Datei hochladen");
-      return;
-    }
     setCheck("ocr", "done");
     setProgress(50);
 
-    // Step 3: parse metadata
     setCheck("parse", "active");
     await delay(500 + Math.random() * 300);
     setCheck("parse", "done");
     setProgress(75);
 
-    // Step 4: legal check
     setCheck("legal", "active");
     await delay(400 + Math.random() * 300);
     setCheck("legal", "done");
     setProgress(100);
 
-    setExtractedText(extraction.text);
+    setExtractedText(combineDocumentTexts(extractedParts));
     setStatus("readable");
-  }, [setCheck]);
+  }, [queuedFiles, setCheck]);
 
   const generateLetter = useCallback(async () => {
-    if (!extractedText && status !== "readable") return;
+    if (!extractedText && status !== "readable") {
+      return;
+    }
 
     setStatus("analyzing");
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentText: extractedText, fileName }),
+        body: JSON.stringify({
+          documentText: extractedText,
+          fileName: fileName ?? undefined,
+        }),
       });
 
       if (!response.ok) {
@@ -133,9 +227,8 @@ export function useDocumentWorkflow() {
 
   const reset = useCallback(() => {
     setStatus("idle");
+    setQueuedFiles([]);
     setFileName(null);
-    setFileSize(null);
-    setFileExt(null);
     setErrorMessage(null);
     setResult(null);
     setCheckStates({});
@@ -145,15 +238,16 @@ export function useDocumentWorkflow() {
 
   return {
     status,
+    queuedFiles,
     fileName,
-    fileSize,
-    fileExt,
     errorMessage,
     result,
     isProcessing,
     checkStates,
     progress,
-    processFile,
+    addFiles,
+    removeFile,
+    startDocumentCheck,
     generateLetter,
     reset,
   };

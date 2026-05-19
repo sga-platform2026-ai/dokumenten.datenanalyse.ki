@@ -5,17 +5,17 @@ import { ProcessingPanel } from "@/components/ProcessingPanel";
 import { Spinner } from "@/components/Spinner";
 import type { CheckStates, CheckItem } from "@/hooks/useDocumentWorkflow";
 import { getProcessingMessage } from "@/lib/processingMessages";
-import type { ProcessingStatus } from "@/types";
+import type { ProcessingStatus, QueuedFile } from "@/types";
 
 interface FileUploadProps {
-  onFileSelected: (file: File) => void;
+  queuedFiles: QueuedFile[];
+  onFilesAdded: (files: FileList | File[]) => void;
+  onRemoveFile: (id: string) => void;
+  onStartCheck: () => void;
   onGenerate: () => void;
   onReset: () => void;
   disabled: boolean;
   status: ProcessingStatus;
-  fileName: string | null;
-  fileSize: string | null;
-  fileExt: string | null;
   checkStates: CheckStates;
   checkItems: CheckItem[];
   progress: number;
@@ -23,14 +23,14 @@ interface FileUploadProps {
 }
 
 export function FileUpload({
-  onFileSelected,
+  queuedFiles,
+  onFilesAdded,
+  onRemoveFile,
+  onStartCheck,
   onGenerate,
   onReset,
   disabled,
   status,
-  fileName,
-  fileSize,
-  fileExt,
   checkStates,
   checkItems,
   progress,
@@ -40,88 +40,174 @@ export function FileUpload({
   const inputId = "upload-file-input";
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const handleFile = useCallback(
-    (file: File | undefined) => {
-      if (!file || disabled) return;
-      onFileSelected(file);
-    },
-    [disabled, onFileSelected],
-  );
-
-  const showDrop     = status === "idle" || status === "error";
-  const showFileRow  = fileName && status !== "idle";
-  const showChecklist = ["reading","checking","readable","analyzing","done"].includes(status);
-  const showGenBtn   = status === "readable";
-  const showResetBtn = status !== "idle";
+  const canPickFiles =
+    status === "idle" || status === "selected" || status === "error";
+  const hasFiles = queuedFiles.length > 0;
+  const showMainDrop = canPickFiles && !hasFiles;
+  const showAddMore = canPickFiles && hasFiles;
+  const showChecklist = [
+    "reading",
+    "checking",
+    "readable",
+    "analyzing",
+    "done",
+  ].includes(status);
+  const showCheckBtn = status === "selected" && hasFiles;
+  const showGenBtn = status === "readable";
+  const showResetBtn = hasFiles || status !== "idle";
   const isGenerating = status === "analyzing";
   const uploadBusy = status === "reading" || status === "checking";
   const processingMsg = getProcessingMessage(status);
+  const pickDisabled = disabled || !canPickFiles;
+
+  const ingestFiles = useCallback(
+    (files: FileList | File[] | undefined) => {
+      if (!files || pickDisabled) {
+        return;
+      }
+      onFilesAdded(files);
+    },
+    [onFilesAdded, pickDisabled],
+  );
+
+  const fileInput = (
+    <input
+      id={inputId}
+      ref={inputRef}
+      type="file"
+      multiple
+      accept=".pdf,.jpg,.jpeg,.png,.docx,.tif,.tiff"
+      style={{
+        position: "absolute",
+        width: 1,
+        height: 1,
+        padding: 0,
+        margin: -1,
+        overflow: "hidden",
+        clip: "rect(0,0,0,0)",
+        whiteSpace: "nowrap",
+        border: 0,
+      }}
+      disabled={pickDisabled}
+      onChange={(e) => {
+        ingestFiles(e.target.files ?? undefined);
+        e.target.value = "";
+      }}
+    />
+  );
 
   return (
     <section className="card accent" id="upload-card">
       <div className="row-between" style={{ marginBottom: 14 }}>
         <div>
           <div className="label">Schritt 1 · Eingang</div>
-          <h2>{showChecklist ? "Lesbarkeitsprüfung" : "Dokument hochladen"}</h2>
+          <h2>
+            {showChecklist
+              ? "Lesbarkeitsprüfung"
+              : hasFiles
+                ? "Dokumente ausgewählt"
+                : "Dokumente hochladen"}
+          </h2>
         </div>
         {showResetBtn && (
-          <button className="btn-link" onClick={onReset}>
+          <button type="button" className="btn-link" onClick={onReset}>
             ↺ Neu beginnen
           </button>
         )}
       </div>
 
-      {showDrop && (
+      {showMainDrop && (
         <label
-          htmlFor={disabled ? undefined : inputId}
-          className={`drop${isDragOver ? " dragover" : ""}${disabled ? " disabled" : ""}`}
-          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          htmlFor={pickDisabled ? undefined : inputId}
+          className={`drop${isDragOver ? " dragover" : ""}${pickDisabled ? " disabled" : ""}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragOver(true);
+          }}
           onDragLeave={() => setIsDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setIsDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragOver(false);
+            ingestFiles(e.dataTransfer.files);
+          }}
         >
           <div className="plus">+</div>
-          <div className="h">Datei hierher ziehen</div>
-          <div className="s">oder klicken, um eine Datei auszuwählen</div>
+          <div className="h">Dateien hierher ziehen</div>
+          <div className="s">oder klicken – Mehrfachauswahl möglich</div>
           <div className="formats">
-            {["PDF","JPG","PNG","DOCX","TIFF"].map((f) => (
-              <span className="ftag" key={f}>{f}</span>
+            {["PDF", "JPG", "PNG", "DOCX", "TIFF"].map((f) => (
+              <span className="ftag" key={f}>
+                {f}
+              </span>
             ))}
           </div>
-          <input
-            id={inputId}
-            ref={inputRef}
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.docx,.tiff"
-            style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}
-            disabled={disabled}
-            onChange={(e) => {
-              handleFile(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-          />
+          {fileInput}
         </label>
       )}
 
-      {showFileRow && (
-        <div className="file-row">
-          <div className={`file-icon${uploadBusy ? " file-icon-busy" : ""}`}>
-            {uploadBusy ? (
-              <Spinner size="sm" label="Datei wird verarbeitet" />
-            ) : (
-              <span>{fileExt ?? "?"}</span>
-            )}
-          </div>
-          <div className="file-meta">
-            <div className="nm">{fileName}</div>
-            <div className="sz">{fileSize ?? ""}</div>
-          </div>
-          {status !== "analyzing" && status !== "done" && (
-            <button className="file-remove" aria-label="Entfernen" onClick={onReset}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M6 6l12 12M18 6l-12 12" />
-              </svg>
-            </button>
-          )}
+      {hasFiles && (
+        <div className="file-list">
+          {queuedFiles.map((item) => (
+            <div className="file-row" key={item.id}>
+              <div className={`file-icon${uploadBusy ? " file-icon-busy" : ""}`}>
+                {uploadBusy ? (
+                  <Spinner size="sm" label="Datei wird verarbeitet" />
+                ) : (
+                  <span>{item.ext}</span>
+                )}
+              </div>
+              <div className="file-meta">
+                <div className="nm">{item.name}</div>
+                <div className="sz">{item.sizeLabel}</div>
+              </div>
+              {canPickFiles && (
+                <button
+                  type="button"
+                  className="file-remove"
+                  aria-label={`${item.name} entfernen`}
+                  onClick={() => onRemoveFile(item.id)}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M6 6l12 12M18 6l-12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showAddMore && (
+        <div className="add-more-row">
+          <label
+            htmlFor={pickDisabled ? undefined : inputId}
+            className={`drop drop-compact${isDragOver ? " dragover" : ""}${pickDisabled ? " disabled" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragOver(true);
+            }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragOver(false);
+              ingestFiles(e.dataTransfer.files);
+            }}
+          >
+            <span className="drop-compact-plus">+</span>
+            <span>Weitere Datei hinzufügen</span>
+            {fileInput}
+          </label>
+          <p className="add-more-hint">
+            {queuedFiles.length}{" "}
+            {queuedFiles.length === 1 ? "Datei" : "Dateien"} in der Prüfung
+          </p>
         </div>
       )}
 
@@ -133,14 +219,14 @@ export function FileUpload({
       )}
 
       {errorMessage && (
-        <div style={{ marginTop: 14, padding: "10px 14px", background: "rgba(176,72,72,.08)", border: "1px solid rgba(176,72,72,.35)", borderRadius: 8, color: "var(--danger)", fontSize: 13.5 }}>
-          {errorMessage}
-        </div>
+        <div className="upload-error">{errorMessage}</div>
       )}
 
       {showChecklist && (
         <div style={{ marginTop: 18 }}>
-          <div className="label" style={{ marginBottom: 10 }}>Lesbarkeitsprüfung</div>
+          <div className="label" style={{ marginBottom: 10 }}>
+            Lesbarkeitsprüfung
+          </div>
           <div className="check-list">
             {checkItems.map((item) => {
               const s = checkStates[item.key] ?? "idle";
@@ -150,11 +236,20 @@ export function FileUpload({
                   <span className="ic">
                     {s === "active" && <Spinner size="sm" />}
                     {s === "done" && (
-                      <svg viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      >
                         <path d="M5 12l5 5L20 7" />
                       </svg>
                     )}
-                    {s === "error" && <span style={{ color: "var(--danger)", fontSize: 14 }}>✕</span>}
+                    {s === "error" && (
+                      <span style={{ color: "var(--danger)", fontSize: 14 }}>
+                        ✕
+                      </span>
+                    )}
                   </span>
                   <span className="lbl">{lbl}</span>
                 </div>
@@ -169,29 +264,59 @@ export function FileUpload({
 
       <div className="mt-20 row-between" id="upload-actions">
         <div style={{ color: "var(--muted)", fontSize: 12.5 }}>
-          Max. 25 MB · Dateien werden lokal verarbeitet
+          Max. 25 MB pro Datei · lokal verarbeitet
         </div>
-        {showGenBtn && (
-          <button
-            className="btn btn-primary"
-            onClick={onGenerate}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <>
-                <Spinner size="sm" tone="inverse" label="Brief wird formuliert" />
-                Brief wird formuliert …
-              </>
-            ) : (
-              <>
-                <span>Antwortbrief generieren</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M5 12h14M13 6l6 6-6 6" />
-                </svg>
-              </>
-            )}
-          </button>
-        )}
+        <div className="upload-action-buttons">
+          {showCheckBtn && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={onStartCheck}
+              disabled={disabled}
+            >
+              <span>Dokument prüfen</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </button>
+          )}
+          {showGenBtn && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={onGenerate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <Spinner
+                    size="sm"
+                    tone="inverse"
+                    label="Brief wird formuliert"
+                  />
+                  Brief wird formuliert …
+                </>
+              ) : (
+                <>
+                  <span>Antwortbrief generieren</span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );

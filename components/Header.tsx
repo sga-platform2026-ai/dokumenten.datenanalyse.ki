@@ -13,6 +13,7 @@ const STATUS_PILL: Record<
   { label: string; state: string }
 > = {
   idle:      { label: "Bereit",                      state: "" },
+  selected:  { label: "Dateien ausgewählt",          state: "" },
   reading:   { label: "Dokument wird gelesen …",     state: "working" },
   checking:  { label: "Lesbarkeit wird geprüft …",   state: "working" },
   readable:  { label: "Dokument lesbar",              state: "done" },

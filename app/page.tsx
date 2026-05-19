@@ -23,15 +23,16 @@ function getNow(): string {
 export default function HomePage() {
   const {
     status,
+    queuedFiles,
     fileName,
-    fileSize,
-    fileExt,
     errorMessage,
     result,
     isProcessing,
     checkStates,
     progress,
-    processFile,
+    addFiles,
+    removeFile,
+    startDocumentCheck,
     generateLetter,
     reset,
   } = useDocumentWorkflow();
@@ -47,8 +48,8 @@ export default function HomePage() {
 
   const railStep = (key: string, label: string, n: number) => {
     let on: string | undefined;
-    if (key === "upload" && ["reading","checking","readable","analyzing","done"].includes(status)) on = "done";
-    else if (key === "upload" && status === "idle") on = "1";
+    if (key === "upload" && ["selected","reading","checking","readable","analyzing","done"].includes(status)) on = "done";
+    else if (key === "upload" && (status === "idle" || status === "selected")) on = queuedFiles.length > 0 ? "done" : "1";
     else if (key === "read" && ["checking","readable"].includes(status)) on = "done";
     else if (key === "read" && status === "reading") on = "1";
     else if (key === "extract" && status === "readable") on = "done";
@@ -82,8 +83,8 @@ export default function HomePage() {
 
         <h1 className="page-title">Dokument prüfen &amp; Antwort entwerfen.</h1>
         <p className="page-lede">
-          Laden Sie einen Bescheid, eine Mahnung oder ein behördliches Schreiben hoch.
-          Die Lesbarkeit wird geprüft, Absender und Aktenzeichen werden erkannt —
+          Laden Sie ein oder mehrere Schreiben hoch (PDF, DOCX, Bilder).
+          Mit „Dokument prüfen“ starten Sie die Lesbarkeitsprüfung; Absender und Aktenzeichen werden erkannt —
           anschließend erstellt die KI einen formellen Antwortbrief unter Bezugnahme
           auf die <b>IV. Genfer Konvention</b>.
         </p>
@@ -97,14 +98,14 @@ export default function HomePage() {
 
         <div className="grid">
           <FileUpload
-            onFileSelected={processFile}
-            onGenerate={generateLetter}
+            queuedFiles={queuedFiles}
+            onFilesAdded={addFiles}
+            onRemoveFile={removeFile}
+            onStartCheck={() => void startDocumentCheck()}
+            onGenerate={() => void generateLetter()}
             onReset={reset}
             disabled={isProcessing}
             status={status}
-            fileName={fileName}
-            fileSize={fileSize}
-            fileExt={fileExt}
             checkStates={checkStates}
             checkItems={CHECK_ITEMS}
             progress={progress}
