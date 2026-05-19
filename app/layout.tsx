@@ -5,6 +5,19 @@ export const metadata: Metadata = {
   title: "Dokumentenprüfung GA IV",
   description:
     "Automatisierte Prüfung amtlicher Schreiben nach dem IV. Genfer Abkommen (GA IV).",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      "max-video-preview": -1,
+      "max-image-preview": "none",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
