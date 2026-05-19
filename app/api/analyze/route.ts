@@ -1,10 +1,16 @@
 import { analyzeDocument } from "@/lib/aiClient";
+import { requireSession } from "@/lib/auth/session";
 import type { AnalyzeRequest } from "@/types";
 import { NextResponse } from "next/server";
 
 const MAX_DOCUMENT_LENGTH = 100_000;
 
 export async function POST(request: Request) {
+  const authError = await requireSession(request);
+  if (authError) {
+    return authError;
+  }
+
   try {
     const body = (await request.json()) as AnalyzeRequest;
     const documentText = body.documentText?.trim() ?? "";

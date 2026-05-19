@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { ActionBar } from "@/components/ActionBar";
 import { AnalysisResult } from "@/components/AnalysisResult";
 import { FileUpload } from "@/components/FileUpload";
-import { Header } from "@/components/Header";
+import { AppHeader } from "@/components/AppHeader";
 import { LetterPreview } from "@/components/LetterPreview";
 import { ProcessingOverlay } from "@/components/ProcessingOverlay";
 import { ProcessingPanel } from "@/components/ProcessingPanel";
@@ -72,7 +72,7 @@ export default function HomePage() {
 
   return (
     <div>
-      <Header status={status} />
+      <AppHeader status={status} />
 
       <main className="shell">
         <div className="eyebrow">

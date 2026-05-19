@@ -95,6 +95,10 @@ body {
 }
 .top-btn:hover { background: #152a48 }
 .top-lang { padding: 0 10px; width: auto; font-weight: 500; letter-spacing: .05em }
+.top-logout {
+  width: auto; padding: 0 12px; font-size: 12px; font-weight: 500;
+  letter-spacing: .02em;
+}
 
 /* ── Layout ──────────────────────────────────────────── */
 .shell {
@@ -483,6 +487,49 @@ h1.page-title {
 }
 .data-empty-icon { font-family: 'Newsreader', serif; font-size: 32px; color: var(--line-2); line-height: 1; margin-bottom: 8px }
 .data-empty-sub { font-size: 12px; margin-top: 6px }
+
+/* ── Login ───────────────────────────────────────────── */
+.login-page { min-height: 100vh; display: flex; flex-direction: column }
+.login-topbar { flex-shrink: 0 }
+.login-shell {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 48px 28px 80px;
+}
+.login-card {
+  width: min(420px, 100%);
+  padding: 28px 26px 30px;
+}
+.login-title {
+  font-family: 'Newsreader', serif;
+  font-size: 32px; font-weight: 500; margin: 0 0 8px;
+  letter-spacing: -.01em; color: var(--ink);
+}
+.login-lede {
+  color: var(--muted); font-size: 14px; margin: 0 0 22px; line-height: 1.5;
+}
+.login-form { display: flex; flex-direction: column; gap: 16px }
+.login-field { display: flex; flex-direction: column; gap: 6px }
+.login-field label {
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); font-weight: 500;
+}
+.login-field input {
+  font: 400 15px 'Inter', sans-serif;
+  padding: 10px 12px; border-radius: 7px;
+  border: 1px solid var(--line-2); background: var(--paper-2);
+  color: var(--ink);
+}
+.login-field input:focus {
+  outline: none; border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(58,106,156,.15);
+}
+.login-field input:disabled { opacity: .65; cursor: not-allowed }
+.login-error {
+  margin: 0; padding: 10px 12px; border-radius: 7px;
+  background: rgba(176,72,72,.1); border: 1px solid rgba(176,72,72,.35);
+  color: var(--danger); font-size: 13px;
+}
+.login-submit { width: 100%; justify-content: center; margin-top: 4px }
 
 @keyframes fadeUp { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none} }
 .fade-up { animation: fadeUp .5s ease both }

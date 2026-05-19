@@ -5,6 +5,7 @@ import type { ProcessingStatus } from "@/types";
 
 interface HeaderProps {
   status: ProcessingStatus;
+  showLogout?: boolean;
 }
 
 const STATUS_PILL: Record<
@@ -20,8 +21,13 @@ const STATUS_PILL: Record<
   error:     { label: "Fehler",                       state: "error" },
 };
 
-export function Header({ status }: HeaderProps) {
+export function Header({ status, showLogout = false }: HeaderProps) {
   const pill = STATUS_PILL[status];
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/login";
+  }
 
   return (
     <header className="topbar">
@@ -53,6 +59,16 @@ export function Header({ status }: HeaderProps) {
           )}
           <span>{pill.label}</span>
         </span>
+        {showLogout && (
+          <button
+            type="button"
+            className="top-btn top-logout"
+            title="Abmelden"
+            onClick={() => void handleLogout()}
+          >
+            Abmelden
+          </button>
+        )}
         <button className="top-btn top-lang" title="Sprache">DE</button>
         <button className="top-btn" title="Hilfe">?</button>
       </div>

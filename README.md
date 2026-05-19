@@ -60,8 +60,26 @@ Die Datei **`.env.local`** ist bereits im Projekt vorhanden; tragen Sie dort Ihr
 | `GROK_API_KEY` | Nein (ja für Live-KI) | API-Key von [console.x.ai](https://console.x.ai/). Ohne Key: Mock-Antworten. |
 | `GROK_API_URL` | Nein | Standard: `https://api.x.ai/v1/chat/completions` |
 | `GROK_MODEL` | Nein | Standard: `grok-3-latest` |
+| `AUTH_USERNAME` | Nein (ja für Login) | Benutzername für den Zugangsschutz |
+| `AUTH_PASSWORD` | Nein (ja für Login) | Passwort für den Zugangsschutz |
+| `AUTH_SECRET` | Nein (ja für Login) | Geheimer Schlüssel für signierte Session-Cookies (mind. 32 Zeichen) |
 
 **Vercel:** dieselben Variablennamen unter *Project → Settings → Environment Variables* setzen (`GROK_API_KEY` und empfohlen `GROK_MODEL=grok-3-latest`).
+
+## Zugangsschutz (optional)
+
+Die App kann mit einem einfachen Benutzername/Passwort-Login geschützt werden. Dafür müssen **alle drei** Variablen `AUTH_USERNAME`, `AUTH_PASSWORD` und `AUTH_SECRET` gesetzt sein (`AUTH_SECRET` mindestens 32 Zeichen).
+
+- **Nicht alle gesetzt:** Die App läuft ohne Login (wie bisher).
+- **Alle gesetzt:** Middleware schützt alle Routen außer `/login`, `/api/auth/*` und statischen Assets. Die Anmeldung erfolgt über `/login`; die Session wird als httpOnly-Cookie (HMAC SHA-256) gespeichert.
+
+`AUTH_SECRET` lokal erzeugen:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Abmelden über den Button **Abmelden** in der Kopfzeile (nur sichtbar, wenn Auth aktiv ist).
 
 API-Key prüfen (lokal, nutzt `.env.local`):
 
@@ -152,9 +170,11 @@ app/
   api/analyze/route.ts  # KI-Analyse (serverseitig)
 components/             # UI-Komponenten
 lib/
+  auth/                 # Session, Credentials, Middleware-Hilfen
   knowledge/            # GA-IV-Volltext (generiert), buildSystemMessage
   systemPrompt.ts       # Prüfauftrag
   aiClient.ts           # Grok + Wissensbasis
+middleware.ts           # Route-Schutz bei aktivem Auth
 hooks/                  # Upload-Workflow
 types/                  # TypeScript-Typen
 ```
