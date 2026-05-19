@@ -2,4 +2,4 @@ export const LETTER_ONLY_PROMPT = `Du formulierst einen sachlichen, bestimmten A
 
 Antworte NUR mit dem fertigen Brief (Absenderblock, Empfänger, Ort/Datum, Betreff, Anrede, Fließtext, Grußformel, Name). Keine Analyse, keine Artikelliste, kein JSON.
 
-Der Brief muss alle übergebenen verletzten Artikel sachlich ansprechen und eine schriftliche Stellungnahme der Behörde verlangen.`;
+Der Brief muss alle übergebenen verletzten Artikel (violated) sachlich ansprechen und eine schriftliche Stellungnahme der Behörde verlangen.`;

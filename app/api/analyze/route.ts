@@ -1,4 +1,5 @@
 import { analyzeDocument } from "@/lib/aiClient";
+import { ANALYSIS_NOT_CONFIGURED_MESSAGE } from "@/lib/analysisConfig";
 import { requireSession } from "@/lib/auth/session";
 import type { AnalyzeRequest } from "@/types";
 import { NextResponse } from "next/server";
@@ -35,6 +36,9 @@ export async function POST(request: Request) {
     const message =
       error instanceof Error ? error.message : "Unbekannter Serverfehler.";
 
-    return NextResponse.json({ error: message }, { status: 502 });
+    const status =
+      message === ANALYSIS_NOT_CONFIGURED_MESSAGE ? 503 : 502;
+
+    return NextResponse.json({ error: message }, { status });
   }
 }

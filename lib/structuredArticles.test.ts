@@ -101,6 +101,24 @@ test("articleReviews mit affected:true ergeben separate affected-Liste", () => {
   assert.equal(result.affectedCount, 2);
 });
 
+test("applyNormalizedArticlesToAnalysis parst Abschnitt 2 (Verletzte oder berührte)", () => {
+  const raw = `1. Absender-Identifikation
+Behörde: Testamt
+
+2. Verletzte oder berührte Artikel des IV. Genfer Abkommens
+Artikel 7 Abs. 2 GA IV – Anrede Herr
+Artikel 31 GA IV – Fristandrohung
+
+5.2. Verletzte Artikel des IV. Genfer Abkommens
+Artikel 27 GA IV – Ehre`;
+
+  const { articles } = applyNormalizedArticlesToAnalysis(raw);
+  assert.equal(articles.length, 3);
+  assert.equal(articles[0].id, "7-2");
+  assert.equal(articles[1].id, "27");
+  assert.equal(articles[2].id, "31");
+});
+
 test("affected schließt bereits violated Artikel aus", () => {
   const raw = `<!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"27","violated":true,"reason":"konkret"}],"potentiallyAffected":[{"id":"27","note":"doppelt"},{"id":"1","note":"allg."}]}<!--/GA_IV_ARTICLES-->`;
 

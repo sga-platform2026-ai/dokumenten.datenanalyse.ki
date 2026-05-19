@@ -18,6 +18,9 @@
 # production
 /build
 
+# lokale Test-PDFs
+/pdf/
+
 # misc
 .DS_Store
 *.pem

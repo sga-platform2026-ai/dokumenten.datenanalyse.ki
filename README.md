@@ -19,7 +19,7 @@ npm install
 ## Lokale Entwicklung
 
 1. Umgebungsdatei anlegen (siehe Abschnitt **Umgebungsdateien – Benennung**)
-2. Optional `GROK_API_KEY` in `.env.local` eintragen (ohne Key: Mock-Modus)
+2. Optional `GROK_API_KEY` in `.env.local` eintragen (ohne Key: Mock-Analyse)
 3. Dev-Server starten:
 
 ```bash
@@ -57,7 +57,7 @@ Die Datei **`.env.local`** ist bereits im Projekt vorhanden; tragen Sie dort Ihr
 
 | Variable | Pflicht | Beschreibung |
 |----------|---------|--------------|
-| `GROK_API_KEY` | Nein (ja für Live-KI) | API-Key von [console.x.ai](https://console.x.ai/). Ohne Key: Mock-Antworten. |
+| `GROK_API_KEY` | Nein (ja für Live-KI) | API-Key von [console.x.ai](https://console.x.ai/). Ohne Key: Mock-Daten. |
 | `GROK_API_URL` | Nein | Standard: `https://api.x.ai/v1/chat/completions` |
 | `GROK_MODEL` | Nein | Standard: `grok-3-latest` |
 | `AUTH_USERNAME` | Nein (ja für Login) | Benutzername für den Zugangsschutz |
@@ -95,16 +95,15 @@ npm run test:grok
 
 Schlecht lesbare Scans liefern die Meldung: *„Dokument nicht ausreichend lesbar – bitte bessere Datei hochladen“*.
 
-## Wissensbasis (nur GA IV)
+## KI-Analyse / Prompts
 
-Der vollständige Wortlaut des **Genfer Abkommens IV** (SR 0.518.51) aus der GAIA-PDF *Völkerrechtvorschriften* liegt in `lib/knowledge/ga-iv-knowledge.ts` und wird bei der Grok-Analyse zusammen mit dem Prüfauftrag (`lib/systemPrompt.ts`) als Systemnachricht mitgesendet. Zusatzprotokolle und andere Abkommen sind nicht enthalten.
+Die Analyse läuft in zwei Grok-Aufrufen: (1) Absender + Artikelprüfung inkl. JSON-Block `<!--GA_IV_ARTICLES-->`, (2) Antwortbrief. Wissensbasis: 15 GA-IV-Artikel in `lib/knowledge/ga-iv-articles.ts`, Prüfauftrag in `lib/systemPrompt.ts`.
 
-Aktualisieren nach neuer PDF-Version:
+- **Mit `GROK_API_KEY`:** Live-Analyse über xAI Grok (Temperature Artikel-Call 0,2, Brief 0,3).
+- **Ohne Key:** Mock-Antwort aus `lib/mockData.ts`.
+- **Schalter:** `ANALYSIS_PROMPTS_CONFIGURED` in `lib/analysisConfig.ts` (bei `false` → HTTP 503).
 
-```bash
-npm run extract:ga-iv
-# optional: node scripts/extract-ga-iv.mjs "C:\Pfad\zu\Voelkerrechtvorschriften.pdf"
-```
+Tests: `npm run test:articles`
 
 ## API
 
@@ -171,9 +170,11 @@ app/
 components/             # UI-Komponenten
 lib/
   auth/                 # Session, Credentials, Middleware-Hilfen
-  knowledge/            # GA-IV-Volltext (generiert), buildSystemMessage
-  systemPrompt.ts       # Prüfauftrag
-  aiClient.ts           # Grok + Wissensbasis
+  knowledge/            # GA-IV-Wissensdatenbank (15 Artikel)
+  systemPrompt.ts       # Prüfauftrag + technische JSON-Regeln
+  prompts/              # Grok-Systemnachrichten (Artikel-Call, Brief)
+  analysisConfig.ts     # Schalter: Prompts konfiguriert ja/nein
+  aiClient.ts           # Zwei-Call-Grok-Pipeline
 middleware.ts           # Route-Schutz bei aktivem Auth
 hooks/                  # Upload-Workflow
 types/                  # TypeScript-Typen

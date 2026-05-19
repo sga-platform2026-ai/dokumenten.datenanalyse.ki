@@ -1,4 +1,8 @@
 import {
+  ANALYSIS_NOT_CONFIGURED_MESSAGE,
+  ANALYSIS_PROMPTS_CONFIGURED,
+} from "@/lib/analysisConfig";
+import {
   getCachedAnalysis,
   hashDocumentText,
   setCachedAnalysis,
@@ -17,7 +21,7 @@ import type { AnalyzeDiagnostics, AnalyzeResponse } from "@/types";
 const DEFAULT_GROK_MODEL = "grok-3-latest";
 const REQUEST_TIMEOUT_MS = 180_000;
 /** Cache-Version: erhöht bei jeder Pipeline-Änderung. */
-const ANALYSIS_CACHE_VERSION = "v6-pruefauftrag";
+const ANALYSIS_CACHE_VERSION = "v8-knowledge-v2";
 const RAW_PREVIEW_CHARS = 400;
 
 interface GrokConfig {
@@ -108,6 +112,10 @@ export async function analyzeDocument(
   documentText: string,
   fileName?: string,
 ): Promise<AnalyzeResponse> {
+  if (!ANALYSIS_PROMPTS_CONFIGURED) {
+    throw new Error(ANALYSIS_NOT_CONFIGURED_MESSAGE);
+  }
+
   const { apiKey, apiUrl, model } = getGrokConfig();
 
   if (!apiKey) {
@@ -161,7 +169,7 @@ export async function analyzeDocument(
 ---
 Zweiter Prüflauf: Erfasse jetzt vollständig alle Checklisten-Artikel (articleReviews mit violated:true|false für JEDE ID).
 Bei behördlichen Briefen sind oft mehrere Artikel betroffen (z. B. Anrede → 7-2, Fristen/Androhungen → 31-34, Beschwerdeweg → 101).
-Liefere Abschnitt 1 (Absender) und 5.2 inkl. Pflicht-JSON.`;
+Liefere Abschnitt 1 (Absender), Abschnitt 2, 5.2 inkl. Pflicht-JSON.`;
 
       analysisRaw = await grokChat({
         apiKey,

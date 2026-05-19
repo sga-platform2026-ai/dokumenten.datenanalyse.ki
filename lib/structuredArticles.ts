@@ -334,13 +334,14 @@ export function applyNormalizedArticlesToAnalysis(
 ): AnalyzeArticlesResult {
   const detail = extractStructuredArticlesDetailed(analysis);
   const stripped = stripArticlesJsonBlock(analysis);
-  const prose = parseArticlesFromLegacyText(stripped);
+  const prose52 = parseArticlesFromLegacyText(stripped);
+  const prose2 = parseArticlesFromSection2(stripped);
 
   const mergedInputs: ViolatedArticleInput[] = [];
   if (detail.items) {
     mergedInputs.push(...detail.items);
   }
-  mergedInputs.push(...prose);
+  mergedInputs.push(...prose2, ...prose52);
   const articles = normalizeViolatedArticles(mergedInputs);
 
   const violatedIds = new Set(articles.map((a) => a.id));
@@ -354,7 +355,7 @@ export function applyNormalizedArticlesToAnalysis(
     articles,
     affected,
     structuredCount: detail.items?.length ?? 0,
-    proseCount: prose.length,
+    proseCount: prose2.length + prose52.length,
     affectedCount: affected.length,
     hasJsonStart: detail.hasJsonStart,
     hasJsonEnd: detail.hasJsonEnd,
@@ -363,17 +364,54 @@ export function applyNormalizedArticlesToAnalysis(
   };
 }
 
-function getArticlesSectionBody(analysis: string): string {
-  const articlesSection = analysis.split(/5\.2\.\s*Verletzte Artikel/i)[1] ?? "";
-  const endMarkers = ["6. Fertig formulierter Antwortbrief", "6. Antwortbrief"];
-  let sectionBody = articlesSection;
-  for (const marker of endMarkers) {
+const SECTION_END_MARKERS = [
+  "6. Fertig formulierter Antwortbrief",
+  "6. Antwortbrief",
+] as const;
+
+function truncateAtSectionEnds(body: string, extraEndPatterns: RegExp[] = []): string {
+  const sectionBody = body;
+  let cutAt = sectionBody.length;
+
+  for (const marker of SECTION_END_MARKERS) {
     const idx = sectionBody.indexOf(marker);
-    if (idx >= 0) {
-      sectionBody = sectionBody.slice(0, idx);
+    if (idx >= 0 && idx < cutAt) {
+      cutAt = idx;
     }
   }
-  return sectionBody;
+
+  for (const pattern of extraEndPatterns) {
+    const match = pattern.exec(sectionBody);
+    if (match?.index !== undefined && match.index < cutAt) {
+      cutAt = match.index;
+    }
+  }
+
+  return sectionBody.slice(0, cutAt);
+}
+
+function getArticlesSectionBody(analysis: string): string {
+  const articlesSection = analysis.split(/5\.2\.\s*Verletzte Artikel/i)[1] ?? "";
+  return truncateAtSectionEnds(articlesSection);
+}
+
+function getSection2Body(analysis: string): string | null {
+  const marker = /2\.\s*Verletzte oder berührte Artikel[^\n]*/iu;
+  if (!marker.test(analysis)) {
+    return null;
+  }
+
+  const parts = analysis.split(marker);
+  if (parts.length < 2) {
+    return null;
+  }
+
+  return truncateAtSectionEnds(parts[1], [
+    /^3\.\s/m,
+    /^4\.\s/m,
+    /^5\.\s/m,
+    /5\.2\.\s*Verletzte Artikel/iu,
+  ]);
 }
 
 function splitArticleLine(line: string): ViolatedArticleInput | null {
@@ -399,10 +437,8 @@ function splitArticleLine(line: string): ViolatedArticleInput | null {
   return { id, label, reason };
 }
 
-function parseArticlesFromLegacyText(
-  analysis: string,
-): ViolatedArticleInput[] {
-  const lines = getArticlesSectionBody(analysis)
+function parseArticlesFromProseBody(sectionBody: string): ViolatedArticleInput[] {
+  const lines = sectionBody
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !line.startsWith("<!--"));
@@ -448,6 +484,18 @@ function parseArticlesFromLegacyText(
   flushPending();
 
   return results;
+}
+
+function parseArticlesFromLegacyText(analysis: string): ViolatedArticleInput[] {
+  return parseArticlesFromProseBody(getArticlesSectionBody(analysis));
+}
+
+function parseArticlesFromSection2(analysis: string): ViolatedArticleInput[] {
+  const body = getSection2Body(analysis);
+  if (!body) {
+    return [];
+  }
+  return parseArticlesFromProseBody(body);
 }
 
 function replaceArticlesSection(analysis: string, section: string): string {
