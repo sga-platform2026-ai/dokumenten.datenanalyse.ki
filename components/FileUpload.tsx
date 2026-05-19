@@ -37,6 +37,7 @@ export function FileUpload({
   errorMessage,
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = "upload-file-input";
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleFile = useCallback(
@@ -72,13 +73,11 @@ export function FileUpload({
 
       {showDrop && (
         <label
+          htmlFor={disabled ? undefined : inputId}
           className={`drop${isDragOver ? " dragover" : ""}${disabled ? " disabled" : ""}`}
-          tabIndex={0}
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
           onDragLeave={() => setIsDragOver(false)}
           onDrop={(e) => { e.preventDefault(); setIsDragOver(false); handleFile(e.dataTransfer.files[0]); }}
-          onClick={() => !disabled && inputRef.current?.click()}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputRef.current?.click(); } }}
         >
           <div className="plus">+</div>
           <div className="h">Datei hierher ziehen</div>
@@ -89,12 +88,16 @@ export function FileUpload({
             ))}
           </div>
           <input
+            id={inputId}
             ref={inputRef}
             type="file"
             accept=".pdf,.jpg,.jpeg,.png,.docx,.tiff"
-            style={{ display: "none" }}
+            style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}
             disabled={disabled}
-            onChange={(e) => handleFile(e.target.files?.[0])}
+            onChange={(e) => {
+              handleFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
           />
         </label>
       )}
