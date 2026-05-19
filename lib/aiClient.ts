@@ -17,7 +17,7 @@ import type { AnalyzeDiagnostics, AnalyzeResponse } from "@/types";
 const DEFAULT_GROK_MODEL = "grok-3-latest";
 const REQUEST_TIMEOUT_MS = 180_000;
 /** Cache-Version: erhöht bei jeder Pipeline-Änderung. */
-const ANALYSIS_CACHE_VERSION = "v5-affected";
+const ANALYSIS_CACHE_VERSION = "v6-pruefauftrag";
 const RAW_PREVIEW_CHARS = 400;
 
 interface GrokConfig {
