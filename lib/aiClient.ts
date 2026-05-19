@@ -3,32 +3,38 @@ import {
   hashDocumentText,
   setCachedAnalysis,
 } from "@/lib/analysisCache";
-import { buildSystemMessage } from "@/lib/knowledge/buildSystemMessage";
+import { grokChat } from "@/lib/grokChat";
+import { buildArticleCheckSystemMessage } from "@/lib/prompts/articleCheckPrompt";
+import { LETTER_ONLY_PROMPT } from "@/lib/prompts/letterOnlyPrompt";
 import { createMockAnalyzeResponse } from "@/lib/mockData";
-import { splitAiResponse } from "@/lib/parseAiResponse";
-import { applyNormalizedArticlesToAnalysis } from "@/lib/structuredArticles";
+import {
+  applyNormalizedArticlesToAnalysis,
+  type NormalizedViolatedArticle,
+} from "@/lib/structuredArticles";
 import type { AnalyzeResponse } from "@/types";
 
-const DEFAULT_GROK_URL = "https://api.x.ai/v1/chat/completions";
 const DEFAULT_GROK_MODEL = "grok-3-latest";
-const REQUEST_TIMEOUT_MS = 120_000;
+const REQUEST_TIMEOUT_MS = 180_000;
+/** Cache-Version: Zwei-Call-Analyse + Artikel-Union */
+const ANALYSIS_CACHE_VERSION = "v2-two-call";
 
-interface GrokChoice {
-  message?: {
-    content?: string;
-  };
+interface GrokConfig {
+  apiKey: string;
+  apiUrl: string;
+  model: string;
 }
 
-interface GrokApiResponse {
-  choices?: GrokChoice[];
-}
-
-function getGrokConfig() {
+function getGrokConfig(): GrokConfig {
   return {
     apiKey: process.env.GROK_API_KEY?.trim() ?? "",
-    apiUrl: process.env.GROK_API_URL?.trim() || DEFAULT_GROK_URL,
+    apiUrl:
+      process.env.GROK_API_URL?.trim() ?? "https://api.x.ai/v1/chat/completions",
     model: process.env.GROK_MODEL?.trim() || DEFAULT_GROK_MODEL,
   };
+}
+
+function buildCacheKey(documentText: string, fileName?: string): string {
+  return `${hashDocumentText(documentText, fileName)}:${ANALYSIS_CACHE_VERSION}`;
 }
 
 function finalizeAnalysisResponse(
@@ -44,6 +50,15 @@ function finalizeAnalysisResponse(
   };
 }
 
+function formatArticlesForLetter(articles: NormalizedViolatedArticle[]): string {
+  if (articles.length === 0) {
+    return "Keine Artikel übergeben.";
+  }
+  return articles
+    .map((a) => `- ${a.article}: ${a.reason}`)
+    .join("\n");
+}
+
 export async function analyzeDocument(
   documentText: string,
   fileName?: string,
@@ -54,7 +69,7 @@ export async function analyzeDocument(
     return createMockAnalyzeResponse(fileName);
   }
 
-  const cacheKey = hashDocumentText(documentText, fileName);
+  const cacheKey = buildCacheKey(documentText, fileName);
   const cached = getCachedAnalysis(cacheKey);
   if (cached) {
     return {
@@ -67,52 +82,45 @@ export async function analyzeDocument(
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: buildSystemMessage() },
-          {
-            role: "user",
-            content: `Hochgeladenes Dokument:\n\n${documentText}`,
-          },
-        ],
-        temperature: 0.3,
-      }),
+    const userDocument = `Hochgeladenes Dokument:\n\n${documentText}`;
+
+    const analysisRaw = await grokChat({
+      apiKey,
+      apiUrl,
+      model,
+      system: buildArticleCheckSystemMessage(),
+      user: userDocument,
+      temperature: 0.1,
+      maxTokens: 8192,
       signal: controller.signal,
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(
-        `GROK API Fehler (${response.status}): ${errorBody.slice(0, 300)}`,
-      );
-    }
+    const { articles } = applyNormalizedArticlesToAnalysis(analysisRaw);
 
-    const data = (await response.json()) as GrokApiResponse;
-    const rawContent = data.choices?.[0]?.message?.content?.trim();
+    const letterUser = `${userDocument}
 
-    if (!rawContent) {
-      throw new Error("GROK API lieferte keine Inhalte.");
-    }
+---
+Festgestellte Verstöße gegen das IV. Genfer Abkommen (verbindlich für den Brief):
+${formatArticlesForLetter(articles)}
+---`;
 
-    const { analysis, letter } = splitAiResponse(rawContent);
+    const letter = await grokChat({
+      apiKey,
+      apiUrl,
+      model,
+      system: LETTER_ONLY_PROMPT,
+      user: letterUser,
+      temperature: 0.3,
+      maxTokens: 4096,
+      signal: controller.signal,
+    });
 
-    const result = finalizeAnalysisResponse(
-      analysis || rawContent,
-      letter,
-      {
-        model,
-        provider: "grok",
-        timestamp: new Date().toISOString(),
-        mock: false,
-      },
-    );
+    const result = finalizeAnalysisResponse(analysisRaw, letter, {
+      model,
+      provider: "grok",
+      timestamp: new Date().toISOString(),
+      mock: false,
+    });
 
     setCachedAnalysis(cacheKey, result);
     return result;

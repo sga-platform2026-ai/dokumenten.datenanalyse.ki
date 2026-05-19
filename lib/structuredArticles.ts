@@ -127,14 +127,12 @@ export function applyNormalizedArticlesToAnalysis(analysis: string): {
   const structured = extractStructuredArticles(analysis);
   const stripped = stripArticlesJsonBlock(analysis);
 
-  let articles: NormalizedViolatedArticle[];
+  const mergedInputs: ViolatedArticleInput[] = [];
   if (structured) {
-    articles = normalizeViolatedArticles(structured);
-  } else {
-    articles = normalizeViolatedArticles(
-      parseArticlesFromLegacyText(stripped),
-    );
+    mergedInputs.push(...structured);
   }
+  mergedInputs.push(...parseArticlesFromLegacyText(stripped));
+  const articles = normalizeViolatedArticles(mergedInputs);
 
   const section = formatArticlesSection(articles);
   const displayAnalysis = replaceArticlesSection(stripped, section);
