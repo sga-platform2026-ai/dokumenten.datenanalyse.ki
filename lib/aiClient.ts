@@ -82,7 +82,7 @@ export async function analyzeDocument(
             content: `Hochgeladenes Dokument:\n\n${documentText}`,
           },
         ],
-        temperature: 0.4,
+        temperature: 0.3,
       }),
       signal: controller.signal,
     });
