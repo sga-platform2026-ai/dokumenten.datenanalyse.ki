@@ -41,10 +41,30 @@ test("applyNormalizedArticlesToAnalysis parses articleReviews JSON", () => {
   const raw = `5.2. Verletzte Artikel
 <!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"7-2","violated":true,"reason":"Anrede"},{"id":"27","violated":true,"reason":"Ehre"},{"id":"1","violated":false}]}<!--/GA_IV_ARTICLES-->`;
 
+  const result = applyNormalizedArticlesToAnalysis(raw);
+  assert.equal(result.articles.length, 2);
+  assert.equal(result.articles[0].id, "7-2");
+  assert.equal(result.articles[1].id, "27");
+  assert.equal(result.jsonValid, true);
+  assert.equal(result.hasJsonEnd, true);
+});
+
+test("articleReviews mit violated:true ohne reason bleibt erhalten (Fallback)", () => {
+  const raw = `<!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"7-2","violated":true},{"id":"27","violated":true,"reason":"konkret"}]}<!--/GA_IV_ARTICLES-->`;
+
   const { articles } = applyNormalizedArticlesToAnalysis(raw);
   assert.equal(articles.length, 2);
   assert.equal(articles[0].id, "7-2");
-  assert.equal(articles[1].id, "27");
+  assert.ok(articles[0].reason.length > 0);
+});
+
+test("abgeschnittenes JSON ohne End-Marker wird rekonstruiert", () => {
+  const raw = `5.2. Verletzte Artikel
+<!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"7-2","violated":true,"reason":"Anrede"},{"id":"27","violated":true,"reason":"Ehre"}]}`;
+
+  const result = applyNormalizedArticlesToAnalysis(raw);
+  assert.equal(result.jsonRecovered, true);
+  assert.equal(result.articles.length, 2);
 });
 
 test("applyNormalizedArticlesToAnalysis parses multiline prose reasons", () => {
@@ -57,4 +77,13 @@ Artikel 27 GA IV – Eingriff in die Ehre`;
   assert.equal(articles.length, 2);
   assert.ok(articles[0].reason.includes("Anrede"));
   assert.equal(articles[1].id, "27");
+});
+
+test("prose pending behält Artikel mit Fallback-Begründung", () => {
+  const raw = `5.2. Verletzte Artikel des IV. Genfer Abkommens
+Artikel 7 Abs. 2 GA IV
+Artikel 27 GA IV – konkret`;
+
+  const { articles } = applyNormalizedArticlesToAnalysis(raw);
+  assert.equal(articles.length, 2);
 });

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActionBar } from "@/components/ActionBar";
 import { AnalysisResult } from "@/components/AnalysisResult";
+import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { FileUpload } from "@/components/FileUpload";
 import { AppHeader } from "@/components/AppHeader";
 import { LetterPreview } from "@/components/LetterPreview";
@@ -39,12 +40,19 @@ export default function HomePage() {
 
   const letterRef = useRef<HTMLDivElement>(null);
   const analyzingMsg = getProcessingMessage(status);
+  const [debugEnabled, setDebugEnabled] = useState(false);
 
   useEffect(() => {
     if (status === "done" && letterRef.current) {
       letterRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [status]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    setDebugEnabled(params.get("debug") === "1");
+  }, []);
 
   const railStep = (key: string, label: string, n: number) => {
     let on: string | undefined;
@@ -153,6 +161,13 @@ export default function HomePage() {
               }
             />
           </div>
+        )}
+
+        {debugEnabled && result?.metadata.diagnostics && (
+          <DiagnosticsPanel
+            diagnostics={result.metadata.diagnostics}
+            cached={result.metadata.cached}
+          />
         )}
       </main>
 

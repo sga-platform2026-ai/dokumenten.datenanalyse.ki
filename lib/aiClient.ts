@@ -9,14 +9,16 @@ import { LETTER_ONLY_PROMPT } from "@/lib/prompts/letterOnlyPrompt";
 import { createMockAnalyzeResponse } from "@/lib/mockData";
 import {
   applyNormalizedArticlesToAnalysis,
+  type AnalyzeArticlesResult,
   type NormalizedViolatedArticle,
 } from "@/lib/structuredArticles";
-import type { AnalyzeResponse } from "@/types";
+import type { AnalyzeDiagnostics, AnalyzeResponse } from "@/types";
 
 const DEFAULT_GROK_MODEL = "grok-3-latest";
 const REQUEST_TIMEOUT_MS = 180_000;
-/** Cache-Version: Zwei-Call-Analyse + Artikel-Union */
-const ANALYSIS_CACHE_VERSION = "v3-checklist-reviews";
+/** Cache-Version: erhöht bei jeder Pipeline-Änderung. */
+const ANALYSIS_CACHE_VERSION = "v4-diagnostics";
+const RAW_PREVIEW_CHARS = 400;
 
 interface GrokConfig {
   apiKey: string;
@@ -33,30 +35,70 @@ function getGrokConfig(): GrokConfig {
   };
 }
 
-function buildCacheKey(documentText: string, fileName?: string): string {
-  return `${hashDocumentText(documentText, fileName)}:${ANALYSIS_CACHE_VERSION}`;
+function isCacheDisabled(): boolean {
+  return process.env.DISABLE_ANALYSIS_CACHE === "1";
 }
 
-function finalizeAnalysisResponse(
-  analysis: string,
-  letter: string,
-  metadata: AnalyzeResponse["metadata"],
-): AnalyzeResponse {
-  const { displayAnalysis } = applyNormalizedArticlesToAnalysis(analysis);
-  return {
-    analysis: displayAnalysis,
-    letter,
-    metadata,
-  };
+function shouldExposeRawPreview(): boolean {
+  return process.env.DEBUG_RAW_RESPONSE === "1";
+}
+
+function buildCacheKey(documentText: string, fileName?: string): string {
+  return `${hashDocumentText(documentText, fileName)}:${ANALYSIS_CACHE_VERSION}`;
 }
 
 function formatArticlesForLetter(articles: NormalizedViolatedArticle[]): string {
   if (articles.length === 0) {
     return "Keine Artikel übergeben.";
   }
-  return articles
-    .map((a) => `- ${a.article}: ${a.reason}`)
-    .join("\n");
+  return articles.map((a) => `- ${a.article}: ${a.reason}`).join("\n");
+}
+
+function buildDiagnostics(
+  documentText: string,
+  analysisRaw: string,
+  parsed: AnalyzeArticlesResult,
+  retried: boolean,
+  retryReason: string | undefined,
+): AnalyzeDiagnostics {
+  return {
+    rawAnalysisLength: analysisRaw.length,
+    rawAnalysisPreview: shouldExposeRawPreview()
+      ? analysisRaw.slice(0, RAW_PREVIEW_CHARS)
+      : undefined,
+    hasJsonStart: parsed.hasJsonStart,
+    hasJsonEnd: parsed.hasJsonEnd,
+    jsonValid: parsed.jsonValid,
+    jsonRecovered: parsed.jsonRecovered || undefined,
+    structuredCount: parsed.structuredCount,
+    proseCount: parsed.proseCount,
+    mergedCount: parsed.articles.length,
+    retried,
+    retryReason,
+    documentLength: documentText.length,
+  };
+}
+
+function logAnalysisDiagnostics(
+  step: string,
+  diagnostics: AnalyzeDiagnostics,
+): void {
+  console.info(
+    `[analyzeDocument:${step}]`,
+    JSON.stringify({
+      rawAnalysisLength: diagnostics.rawAnalysisLength,
+      hasJsonStart: diagnostics.hasJsonStart,
+      hasJsonEnd: diagnostics.hasJsonEnd,
+      jsonValid: diagnostics.jsonValid,
+      jsonRecovered: diagnostics.jsonRecovered,
+      structuredCount: diagnostics.structuredCount,
+      proseCount: diagnostics.proseCount,
+      mergedCount: diagnostics.mergedCount,
+      retried: diagnostics.retried,
+      retryReason: diagnostics.retryReason,
+      documentLength: diagnostics.documentLength,
+    }),
+  );
 }
 
 export async function analyzeDocument(
@@ -70,12 +112,14 @@ export async function analyzeDocument(
   }
 
   const cacheKey = buildCacheKey(documentText, fileName);
-  const cached = getCachedAnalysis(cacheKey);
-  if (cached) {
-    return {
-      ...cached,
-      metadata: { ...cached.metadata, cached: true },
-    };
+  if (!isCacheDisabled()) {
+    const cached = getCachedAnalysis(cacheKey);
+    if (cached) {
+      return {
+        ...cached,
+        metadata: { ...cached.metadata, cached: true },
+      };
+    }
   }
 
   const controller = new AbortController();
@@ -95,35 +139,49 @@ export async function analyzeDocument(
       signal: controller.signal,
     });
 
-    let { articles } = applyNormalizedArticlesToAnalysis(analysisRaw);
+    let parsed = applyNormalizedArticlesToAnalysis(analysisRaw);
+    let retried = false;
+    let retryReason: string | undefined;
 
-    if (articles.length <= 2) {
+    logAnalysisDiagnostics(
+      "call1",
+      buildDiagnostics(documentText, analysisRaw, parsed, false, undefined),
+    );
+
+    if (parsed.articles.length <= 2) {
+      retried = true;
+      retryReason = `nur ${parsed.articles.length} Artikel im ersten Lauf`;
+
+      const retryUser = `${userDocument}
+
+---
+Zweiter Prüflauf: Erfasse jetzt vollständig alle Checklisten-Artikel (articleReviews mit violated:true|false für JEDE ID).
+Bei behördlichen Briefen sind oft mehrere Artikel betroffen (z. B. Anrede → 7-2, Fristen/Androhungen → 31-34, Beschwerdeweg → 101).
+Liefere Abschnitt 1 (Absender) und 5.2 inkl. Pflicht-JSON.`;
+
       analysisRaw = await grokChat({
         apiKey,
         apiUrl,
         model,
         system: buildArticleCheckSystemMessage(),
-        user: `${userDocument}
-
----
-Die erste Auswertung war zu knapp (${articles.length} Artikel). Prüfe alle Checklisten-Artikel erneut am vollen Dokumententext.
-Typische behördliche Schreiben betreffen oft mehrere Vorschriften (z. B. 7-2, 27, 31–34, 47, 101, 131).
-Liefere vollständige Abschnitte 1 und 5.2 mit articleReviews für jede Checklisten-ID.
-
-Vorläufige Analyse:
-${analysisRaw}`,
+        user: retryUser,
         temperature: 0.2,
         maxTokens: 8192,
         signal: controller.signal,
       });
-      ({ articles } = applyNormalizedArticlesToAnalysis(analysisRaw));
+
+      parsed = applyNormalizedArticlesToAnalysis(analysisRaw);
+      logAnalysisDiagnostics(
+        "call1-retry",
+        buildDiagnostics(documentText, analysisRaw, parsed, true, retryReason),
+      );
     }
 
     const letterUser = `${userDocument}
 
 ---
 Festgestellte Verstöße gegen das IV. Genfer Abkommen (verbindlich für den Brief):
-${formatArticlesForLetter(articles)}
+${formatArticlesForLetter(parsed.articles)}
 ---`;
 
     const letter = await grokChat({
@@ -137,14 +195,29 @@ ${formatArticlesForLetter(articles)}
       signal: controller.signal,
     });
 
-    const result = finalizeAnalysisResponse(analysisRaw, letter, {
-      model,
-      provider: "grok",
-      timestamp: new Date().toISOString(),
-      mock: false,
-    });
+    const diagnostics = buildDiagnostics(
+      documentText,
+      analysisRaw,
+      parsed,
+      retried,
+      retryReason,
+    );
 
-    setCachedAnalysis(cacheKey, result);
+    const result: AnalyzeResponse = {
+      analysis: parsed.displayAnalysis,
+      letter,
+      metadata: {
+        model,
+        provider: "grok",
+        timestamp: new Date().toISOString(),
+        mock: false,
+        diagnostics,
+      },
+    };
+
+    if (!isCacheDisabled()) {
+      setCachedAnalysis(cacheKey, result);
+    }
     return result;
   } finally {
     clearTimeout(timeout);

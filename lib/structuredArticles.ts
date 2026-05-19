@@ -47,6 +47,9 @@ function parseArticlesPayload(raw: string): ArticlesJsonPayload | null {
   }
 }
 
+const FALLBACK_REASON =
+  "Verstoß im Schreiben festgestellt (keine Detailbegründung geliefert).";
+
 function reviewsToViolatedInputs(
   reviews: ArticleReviewInput[],
 ): ViolatedArticleInput[] {
@@ -60,13 +63,10 @@ function reviewsToViolatedInputs(
     if (!reason && review.violated !== true) {
       continue;
     }
-    if (!reason) {
-      continue;
-    }
     items.push({
       id: review.id,
       label: review.label,
-      reason,
+      reason: reason || FALLBACK_REASON,
     });
   }
 
@@ -85,24 +85,95 @@ function payloadToViolatedInputs(
   return null;
 }
 
+export interface ExtractStructuredResult {
+  items: ViolatedArticleInput[] | null;
+  hasJsonStart: boolean;
+  hasJsonEnd: boolean;
+  jsonValid: boolean;
+  jsonRecovered: boolean;
+}
+
+function tryRecoverJsonAfterMarker(text: string, startIndex: number): string | null {
+  const slice = text.slice(startIndex + ARTICLES_JSON_START.length);
+
+  const candidateEnds = [
+    /\]\s*\}\s*<!--\/GA_IV_ARTICLES-->/iu,
+    /\]\s*\}/u,
+  ];
+
+  for (const pattern of candidateEnds) {
+    const match = slice.match(pattern);
+    if (match) {
+      const cut = slice.slice(0, (match.index ?? 0) + match[0].length);
+      return cut.replace(/<!--\/GA_IV_ARTICLES-->\s*$/iu, "").trim();
+    }
+  }
+
+  return null;
+}
+
+export function extractStructuredArticlesDetailed(
+  text: string,
+): ExtractStructuredResult {
+  const start = text.indexOf(ARTICLES_JSON_START);
+  if (start < 0) {
+    return {
+      items: null,
+      hasJsonStart: false,
+      hasJsonEnd: false,
+      jsonValid: false,
+      jsonRecovered: false,
+    };
+  }
+
+  const end = text.indexOf(ARTICLES_JSON_END);
+  const hasJsonEnd = end >= 0 && end > start;
+
+  let jsonRaw: string | null = null;
+  let jsonRecovered = false;
+
+  if (hasJsonEnd) {
+    jsonRaw = text.slice(start + ARTICLES_JSON_START.length, end).trim();
+  } else {
+    jsonRaw = tryRecoverJsonAfterMarker(text, start);
+    jsonRecovered = jsonRaw !== null;
+  }
+
+  if (!jsonRaw) {
+    return {
+      items: null,
+      hasJsonStart: true,
+      hasJsonEnd,
+      jsonValid: false,
+      jsonRecovered,
+    };
+  }
+
+  const payload = parseArticlesPayload(jsonRaw);
+  if (!payload) {
+    return {
+      items: null,
+      hasJsonStart: true,
+      hasJsonEnd,
+      jsonValid: false,
+      jsonRecovered,
+    };
+  }
+
+  const items = payloadToViolatedInputs(payload);
+  return {
+    items,
+    hasJsonStart: true,
+    hasJsonEnd,
+    jsonValid: true,
+    jsonRecovered,
+  };
+}
+
 export function extractStructuredArticles(
   text: string,
 ): ViolatedArticleInput[] | null {
-  const start = text.indexOf(ARTICLES_JSON_START);
-  const end = text.indexOf(ARTICLES_JSON_END);
-  if (start < 0 || end < 0 || end <= start) {
-    return null;
-  }
-
-  const jsonRaw = text
-    .slice(start + ARTICLES_JSON_START.length, end)
-    .trim();
-  const payload = parseArticlesPayload(jsonRaw);
-  if (!payload) {
-    return null;
-  }
-
-  return payloadToViolatedInputs(payload);
+  return extractStructuredArticlesDetailed(text).items;
 }
 
 export function stripArticlesJsonBlock(text: string): string {
@@ -165,25 +236,45 @@ export function buildArticlesJsonBlock(
   return `${ARTICLES_JSON_START}${JSON.stringify(payload)}${ARTICLES_JSON_END}`;
 }
 
-/** Ersetzt Abschnitt 5.2 durch normalisierte Liste und entfernt JSON-Marker aus dem Anzeigetext. */
-export function applyNormalizedArticlesToAnalysis(analysis: string): {
+export interface AnalyzeArticlesResult {
   displayAnalysis: string;
   articles: NormalizedViolatedArticle[];
-} {
-  const structured = extractStructuredArticles(analysis);
+  structuredCount: number;
+  proseCount: number;
+  hasJsonStart: boolean;
+  hasJsonEnd: boolean;
+  jsonValid: boolean;
+  jsonRecovered: boolean;
+}
+
+/** Ersetzt Abschnitt 5.2 durch normalisierte Liste und entfernt JSON-Marker aus dem Anzeigetext. */
+export function applyNormalizedArticlesToAnalysis(
+  analysis: string,
+): AnalyzeArticlesResult {
+  const detail = extractStructuredArticlesDetailed(analysis);
   const stripped = stripArticlesJsonBlock(analysis);
+  const prose = parseArticlesFromLegacyText(stripped);
 
   const mergedInputs: ViolatedArticleInput[] = [];
-  if (structured) {
-    mergedInputs.push(...structured);
+  if (detail.items) {
+    mergedInputs.push(...detail.items);
   }
-  mergedInputs.push(...parseArticlesFromLegacyText(stripped));
+  mergedInputs.push(...prose);
   const articles = normalizeViolatedArticles(mergedInputs);
 
   const section = formatArticlesSection(articles);
   const displayAnalysis = replaceArticlesSection(stripped, section);
 
-  return { displayAnalysis, articles };
+  return {
+    displayAnalysis,
+    articles,
+    structuredCount: detail.items?.length ?? 0,
+    proseCount: prose.length,
+    hasJsonStart: detail.hasJsonStart,
+    hasJsonEnd: detail.hasJsonEnd,
+    jsonValid: detail.jsonValid,
+    jsonRecovered: detail.jsonRecovered,
+  };
 }
 
 function getArticlesSectionBody(analysis: string): string {
@@ -233,11 +324,19 @@ function parseArticlesFromLegacyText(
   const results: ViolatedArticleInput[] = [];
   let pending: ViolatedArticleInput | null = null;
 
+  const flushPending = () => {
+    if (!pending) return;
+    if (pending.reason) {
+      results.push(pending);
+    } else {
+      results.push({ ...pending, reason: FALLBACK_REASON });
+    }
+    pending = null;
+  };
+
   for (const line of lines) {
     if (/^Artikel\s+\d+/iu.test(line)) {
-      if (pending?.reason) {
-        results.push(pending);
-      }
+      flushPending();
       pending = splitArticleLine(line);
       if (pending?.reason) {
         results.push(pending);
@@ -260,9 +359,7 @@ function parseArticlesFromLegacyText(
     }
   }
 
-  if (pending?.reason) {
-    results.push(pending);
-  }
+  flushPending();
 
   return results;
 }

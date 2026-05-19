@@ -37,6 +37,21 @@ export interface AnalyzeRequest {
   fileName?: string;
 }
 
+export interface AnalyzeDiagnostics {
+  rawAnalysisLength: number;
+  rawAnalysisPreview?: string;
+  hasJsonStart: boolean;
+  hasJsonEnd: boolean;
+  jsonValid: boolean;
+  jsonRecovered?: boolean;
+  structuredCount: number;
+  proseCount: number;
+  mergedCount: number;
+  retried: boolean;
+  retryReason?: string;
+  documentLength: number;
+}
+
 export interface AnalyzeMetadata {
   model: string;
   provider: "grok" | "mock";
@@ -44,6 +59,7 @@ export interface AnalyzeMetadata {
   mock?: boolean;
   /** Gleiches Dokument aus Server-Cache (identischer Text-Hash). */
   cached?: boolean;
+  diagnostics?: AnalyzeDiagnostics;
 }
 
 export interface AnalyzeResponse {
