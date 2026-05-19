@@ -32,6 +32,8 @@ export interface AnalyzeMetadata {
   provider: "grok" | "mock";
   timestamp: string;
   mock?: boolean;
+  /** Gleiches Dokument aus Server-Cache (identischer Text-Hash). */
+  cached?: boolean;
 }
 
 export interface AnalyzeResponse {

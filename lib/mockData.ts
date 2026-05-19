@@ -1,10 +1,10 @@
+import { applyNormalizedArticlesToAnalysis } from "@/lib/structuredArticles";
 import type { AnalyzeResponse } from "@/types";
 
 export function createMockAnalyzeResponse(fileName?: string): AnalyzeResponse {
   const reference = fileName ? ` (${fileName})` : "";
 
-  return {
-    analysis: `1. Absender-Identifikation
+  const rawAnalysis = `1. Absender-Identifikation
 Behörde / Institution: Stadtverwaltung Musterstadt, Amtsstraße 12, 12345 Musterstadt
 Verantwortlicher Sachbearbeiter: Max Mustermann, Sachbearbeiter Ordnungsamt, max.mustermann@musterstadt.de, Tel. 0123/456-789
 Leiter der Behörde / Institution (Gesamtverantwortung): Dr. Anna Beispiel, Amtsleiterin Ordnungsamt – (recherchiert)
@@ -13,7 +13,13 @@ Leiter der Behörde / Institution (Gesamtverantwortung): Dr. Anna Beispiel, Amts
 Artikel 7 Abs. 2 GA IV – Die Anrede „Herr …“ im Schreiben${reference} qualifiziert die angeschriebene Person als juristische Entität und widerspricht dem Schutzstatus als Zivilperson.
 Artikel 27 GA IV – Der Inhalt des Schreibens greift in die persönliche Sphäre ein, ohne dass eine neutrale, schutzgerechte Kommunikation gewahrt wurde.
 Artikel 31 GA IV – Die Fristsetzung und Androhung weiterer Maßnahmen wirken einschüchternd und nicht sachlich ausgewogen.
-Artikel 101 GA IV – Es fehlt ein klarer, wirksamer Beschwerdeweg im Sinne des Abkommens.`,
+Artikel 101 GA IV – Es fehlt ein klarer, wirksamer Beschwerdeweg im Sinne des Abkommens.
+<!--GA_IV_ARTICLES-->{"violatedArticles":[{"id":"7-2","label":"Artikel 7 Abs. 2 GA IV","reason":"Die Anrede „Herr …“ im Schreiben${reference} qualifiziert die angeschriebene Person als juristische Entität und widerspricht dem Schutzstatus als Zivilperson."},{"id":"27","label":"Artikel 27 GA IV","reason":"Der Inhalt des Schreibens greift in die persönliche Sphäre ein, ohne dass eine neutrale, schutzgerechte Kommunikation gewahrt wurde."},{"id":"31","label":"Artikel 31 GA IV","reason":"Die Fristsetzung und Androhung weiterer Maßnahmen wirken einschüchternd und nicht sachlich ausgewogen."},{"id":"101","label":"Artikel 101 GA IV","reason":"Es fehlt ein klarer, wirksamer Beschwerdeweg im Sinne des Abkommens."}]}<!--/GA_IV_ARTICLES-->`;
+
+  const { displayAnalysis } = applyNormalizedArticlesToAnalysis(rawAnalysis);
+
+  return {
+    analysis: displayAnalysis,
     letter: `Max Mustermann
 Musterweg 1
 12345 Musterstadt

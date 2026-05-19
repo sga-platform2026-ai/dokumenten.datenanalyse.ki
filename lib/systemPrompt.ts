@@ -43,7 +43,17 @@ Leiter der Behörde / Institution (Gesamtverantwortung): [Vorname Nachname, gena
 
 5.2. Verletzte Artikel des IV. Genfer Abkommens
 Artikel xx GA IV – kurze Begründung mit Bezug zum konkreten Inhalt des Schreibens
-Artikel yy GA IV – …
+(jede verletzte Artikelnummer nur einmal; dieselben Artikel wie im JSON-Block unten)
+
+PFLICHT – maschinenlesbarer Block direkt nach Abschnitt 5.2 (eine Zeile, gültiges JSON):
+<!--GA_IV_ARTICLES-->{"violatedArticles":[{"id":"7-2","label":"Artikel 7 Abs. 2 GA IV","reason":"…"}]}<!--/GA_IV_ARTICLES-->
+
+JSON-Regeln:
+- violatedArticles: alle tatsächlich verletzten Artikel, keine Duplikate
+- id: kanonisch z. B. "1", "4", "7-2", "27", "31", "101" (Ziffer Absatz als "7-2")
+- label: lesbare Bezeichnung "Artikel … GA IV"
+- reason: kurze Begründung mit Bezug zum Schreiben
+- Prüfe zwingend die in Schritt 4 genannten Artikel; nimm jeden Verstoß auf
 
 Danach zusätzlich:
 6. Fertig formulierter Antwortbrief

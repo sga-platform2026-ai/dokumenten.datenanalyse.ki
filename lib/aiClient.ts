@@ -1,6 +1,12 @@
+import {
+  getCachedAnalysis,
+  hashDocumentText,
+  setCachedAnalysis,
+} from "@/lib/analysisCache";
 import { buildSystemMessage } from "@/lib/knowledge/buildSystemMessage";
 import { createMockAnalyzeResponse } from "@/lib/mockData";
 import { splitAiResponse } from "@/lib/parseAiResponse";
+import { applyNormalizedArticlesToAnalysis } from "@/lib/structuredArticles";
 import type { AnalyzeResponse } from "@/types";
 
 const DEFAULT_GROK_URL = "https://api.x.ai/v1/chat/completions";
@@ -25,6 +31,19 @@ function getGrokConfig() {
   };
 }
 
+function finalizeAnalysisResponse(
+  analysis: string,
+  letter: string,
+  metadata: AnalyzeResponse["metadata"],
+): AnalyzeResponse {
+  const { displayAnalysis } = applyNormalizedArticlesToAnalysis(analysis);
+  return {
+    analysis: displayAnalysis,
+    letter,
+    metadata,
+  };
+}
+
 export async function analyzeDocument(
   documentText: string,
   fileName?: string,
@@ -33,6 +52,15 @@ export async function analyzeDocument(
 
   if (!apiKey) {
     return createMockAnalyzeResponse(fileName);
+  }
+
+  const cacheKey = hashDocumentText(documentText, fileName);
+  const cached = getCachedAnalysis(cacheKey);
+  if (cached) {
+    return {
+      ...cached,
+      metadata: { ...cached.metadata, cached: true },
+    };
   }
 
   const controller = new AbortController();
@@ -54,7 +82,7 @@ export async function analyzeDocument(
             content: `Hochgeladenes Dokument:\n\n${documentText}`,
           },
         ],
-        temperature: 0.3,
+        temperature: 0,
       }),
       signal: controller.signal,
     });
@@ -75,16 +103,19 @@ export async function analyzeDocument(
 
     const { analysis, letter } = splitAiResponse(rawContent);
 
-    return {
-      analysis: analysis || rawContent,
+    const result = finalizeAnalysisResponse(
+      analysis || rawContent,
       letter,
-      metadata: {
+      {
         model,
         provider: "grok",
         timestamp: new Date().toISOString(),
         mock: false,
       },
-    };
+    );
+
+    setCachedAnalysis(cacheKey, result);
+    return result;
   } finally {
     clearTimeout(timeout);
   }

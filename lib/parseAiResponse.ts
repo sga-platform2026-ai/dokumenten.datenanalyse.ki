@@ -1,3 +1,4 @@
+import { applyNormalizedArticlesToAnalysis } from "@/lib/structuredArticles";
 import type { AnalyzeResponse, ParsedAnalysis } from "@/types";
 
 const LETTER_MARKER = "6. Fertig formulierter Antwortbrief";
@@ -29,7 +30,9 @@ export function splitAiResponse(rawContent: string): Pick<AnalyzeResponse, "anal
 }
 
 export function parseAnalysisSections(analysis: string): ParsedAnalysis {
-  const raw = analysis.trim();
+  const { displayAnalysis, articles: normalized } =
+    applyNormalizedArticlesToAnalysis(analysis);
+  const raw = displayAnalysis.trim();
   const authorityMatch = raw.match(
     /Behörde\s*\/\s*Institution:\s*([\s\S]*?)(?=\nVerantwortlicher|$)/i,
   );
@@ -40,27 +43,10 @@ export function parseAnalysisSections(analysis: string): ParsedAnalysis {
     /Leiter der Behörde\s*\/\s*Institution[^:]*:\s*([\s\S]*?)(?=\n\n|5\.2\.|$)/i,
   );
 
-  const articlesSection = raw.split(/5\.2\.\s*Verletzte Artikel/i)[1] ?? "";
-  const articleLines = articlesSection
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => /^Artikel\s+\d+/i.test(line));
-
-  const articles = articleLines.map((line) => {
-    const dashIndex = line.indexOf("–");
-    const hyphenIndex = line.indexOf("-");
-    const splitIndex =
-      dashIndex > -1 ? dashIndex : hyphenIndex > -1 ? hyphenIndex : -1;
-
-    if (splitIndex === -1) {
-      return { article: line, reason: "" };
-    }
-
-    return {
-      article: line.slice(0, splitIndex).trim(),
-      reason: line.slice(splitIndex + 1).trim(),
-    };
-  });
+  const articles = normalized.map(({ article, reason }) => ({
+    article,
+    reason,
+  }));
 
   return {
     authority: authorityMatch?.[1]?.trim(),
