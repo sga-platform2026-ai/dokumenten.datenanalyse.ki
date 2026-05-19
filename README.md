@@ -91,9 +91,9 @@ npm run test:grok
 
 - **PDF** – Textextraktion via pdf.js
 - **DOCX** – Textextraktion via mammoth
-- **JPG/PNG** – OCR-Platzhalter (noch keine echte Texterkennung)
+- **JPG, PNG, TIFF** – Texterkennung via Tesseract.js (Sprache: Deutsch)
 
-Bilder ohne OCR liefern die Meldung: *„Dokument nicht ausreichend lesbar – bitte bessere Datei hochladen“*.
+Schlecht lesbare Scans liefern die Meldung: *„Dokument nicht ausreichend lesbar – bitte bessere Datei hochladen“*.
 
 ## Wissensbasis (nur GA IV)
 

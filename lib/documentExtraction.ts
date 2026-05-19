@@ -1,3 +1,4 @@
+import { extractTextWithTesseract } from "@/lib/imageOcr";
 import type { ExtractionResult, SupportedMime } from "@/types";
 
 export const MIN_READABLE_CHARS = 80;
@@ -6,18 +7,32 @@ const SUPPORTED_MIMES: SupportedMime[] = [
   "application/pdf",
   "image/jpeg",
   "image/png",
+  "image/tiff",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
+
+const MIME_ALIASES: Record<string, SupportedMime> = {
+  "image/x-tiff": "image/tiff",
+};
 
 const EXTENSION_MIME_MAP: Record<string, SupportedMime> = {
   pdf: "application/pdf",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   png: "image/png",
+  tif: "image/tiff",
+  tiff: "image/tiff",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 
+const IMAGE_MIMES: SupportedMime[] = ["image/jpeg", "image/png", "image/tiff"];
+
 export function validateFileType(file: File): SupportedMime | null {
+  const alias = MIME_ALIASES[file.type];
+  if (alias) {
+    return alias;
+  }
+
   if (SUPPORTED_MIMES.includes(file.type as SupportedMime)) {
     return file.type as SupportedMime;
   }
@@ -39,6 +54,21 @@ function buildResult(
     method,
     readable: charCount >= MIN_READABLE_CHARS,
   };
+}
+
+function methodForMime(mime: SupportedMime): ExtractionResult["method"] {
+  if (mime === "application/pdf") {
+    return "pdf";
+  }
+  if (
+    mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    return "docx";
+  }
+  if (IMAGE_MIMES.includes(mime)) {
+    return "ocr";
+  }
+  return "unsupported";
 }
 
 async function extractPdfText(file: File): Promise<string> {
@@ -74,20 +104,21 @@ async function extractDocxText(file: File): Promise<string> {
   return result.value;
 }
 
-/**
- * Platzhalter für OCR-Integration.
- * TODO: OCR_PROVIDER env + tesseract.js / Vercel-kompatible OCR anbinden.
- */
-async function extractTextFromImagePlaceholder(): Promise<string> {
-  return "";
+export interface ExtractDocumentOptions {
+  onOcrProgress?: (progress: number) => void;
 }
 
-export async function extractDocumentText(file: File): Promise<ExtractionResult> {
+export async function extractDocumentText(
+  file: File,
+  options?: ExtractDocumentOptions,
+): Promise<ExtractionResult> {
   const mime = validateFileType(file);
 
   if (!mime) {
     return buildResult("", "unsupported");
   }
+
+  const fallbackMethod = methodForMime(mime);
 
   try {
     switch (mime) {
@@ -100,14 +131,18 @@ export async function extractDocumentText(file: File): Promise<ExtractionResult>
         return buildResult(text, "docx");
       }
       case "image/jpeg":
-      case "image/png": {
-        const text = await extractTextFromImagePlaceholder();
-        return buildResult(text, "ocr-placeholder");
+      case "image/png":
+      case "image/tiff": {
+        const text = await extractTextWithTesseract(
+          file,
+          options?.onOcrProgress,
+        );
+        return buildResult(text, "ocr");
       }
       default:
         return buildResult("", "unsupported");
     }
   } catch {
-    return buildResult("", mime === "application/pdf" ? "pdf" : "docx");
+    return buildResult("", fallbackMethod);
   }
 }

@@ -53,7 +53,9 @@ export function useDocumentWorkflow() {
     const mime = validateFileType(file);
     if (!mime) {
       setStatus("error");
-      setErrorMessage("Dateityp nicht unterstützt. Erlaubt: PDF, JPG, PNG, DOCX.");
+      setErrorMessage(
+        "Dateityp nicht unterstützt. Erlaubt: PDF, JPG, PNG, DOCX, TIFF.",
+      );
       return;
     }
 
@@ -63,7 +65,11 @@ export function useDocumentWorkflow() {
 
     // Step 1: read
     setCheck("read", "active");
-    const extraction = await extractDocumentText(file);
+    const extraction = await extractDocumentText(file, {
+      onOcrProgress: (fraction) => {
+        setProgress(10 + Math.round(fraction * 15));
+      },
+    });
     await delay(400);
     setCheck("read", "done");
     setProgress(25);

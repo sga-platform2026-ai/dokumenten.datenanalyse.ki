@@ -11,9 +11,10 @@ export type SupportedMime =
   | "application/pdf"
   | "image/jpeg"
   | "image/png"
+  | "image/tiff"
   | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-export type ExtractionMethod = "pdf" | "docx" | "ocr-placeholder" | "unsupported";
+export type ExtractionMethod = "pdf" | "docx" | "ocr" | "unsupported";
 
 export interface ExtractionResult {
   text: string;
