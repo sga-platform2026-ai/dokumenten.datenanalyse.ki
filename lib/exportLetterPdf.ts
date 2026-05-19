@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { PDF_LETTER_PAGINATION, paginateLetterText } from "@/lib/letterPagination";
 import { letterPdfFileName, normalizeLetterText } from "@/lib/normalizeLetter";
 
 const PAGE_WIDTH_MM = 210;
@@ -7,30 +8,62 @@ const MARGIN_MM = 25;
 const LINE_HEIGHT_MM = 5.5;
 const FONT_SIZE_PT = 11;
 
-function addWrappedLines(
+function contentBottomY(): number {
+  return PAGE_HEIGHT_MM - MARGIN_MM;
+}
+
+function drawPageFooter(
   doc: jsPDF,
-  paragraphs: string[],
-  startY: number,
-): number {
-  const maxWidth = PAGE_WIDTH_MM - 2 * MARGIN_MM;
-  let y = startY;
+  pageIndex: number,
+  pageCount: number,
+): void {
+  if (pageCount <= 1) {
+    return;
+  }
+  doc.setFontSize(9);
+  doc.setTextColor(120, 120, 120);
+  doc.text(
+    `Seite ${pageIndex + 1} von ${pageCount}`,
+    PAGE_WIDTH_MM - MARGIN_MM,
+    PAGE_HEIGHT_MM - 12,
+    { align: "right" },
+  );
+  doc.setFontSize(FONT_SIZE_PT);
+  doc.setTextColor(0, 0, 0);
+}
 
-  for (const paragraph of paragraphs) {
-    const wrapped = doc.splitTextToSize(paragraph, maxWidth) as string[];
+function renderLinesOnPage(
+  doc: jsPDF,
+  pageLines: string[],
+  maxWidth: number,
+  startNewPage: boolean,
+): void {
+  if (startNewPage) {
+    doc.addPage();
+  }
 
-    for (const line of wrapped) {
-      if (y > PAGE_HEIGHT_MM - MARGIN_MM) {
+  let y = MARGIN_MM;
+
+  for (const line of pageLines) {
+    if (line.length === 0) {
+      y += LINE_HEIGHT_MM * 0.35;
+      if (y > contentBottomY()) {
         doc.addPage();
         y = MARGIN_MM;
       }
-      doc.text(line, MARGIN_MM, y);
-      y += LINE_HEIGHT_MM;
+      continue;
     }
 
-    y += LINE_HEIGHT_MM * 0.35;
+    const segments = doc.splitTextToSize(line, maxWidth) as string[];
+    for (const segment of segments) {
+      if (y + LINE_HEIGHT_MM > contentBottomY()) {
+        doc.addPage();
+        y = MARGIN_MM;
+      }
+      doc.text(segment, MARGIN_MM, y);
+      y += LINE_HEIGHT_MM;
+    }
   }
-
-  return y;
 }
 
 /** Erzeugt eine DIN-A4-PDF aus dem Antwortbrief und startet den Download. */
@@ -49,8 +82,14 @@ export function downloadLetterPdf(letterText: string, fileName?: string): void {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(FONT_SIZE_PT);
 
-  const paragraphs = body.split("\n").map((line) => line.trimEnd());
-  addWrappedLines(doc, paragraphs, MARGIN_MM);
+  const maxWidth = PAGE_WIDTH_MM - 2 * MARGIN_MM;
+  const pages = paginateLetterText(body, PDF_LETTER_PAGINATION);
+  const pageCount = pages.length;
+
+  pages.forEach((pageLines, pageIndex) => {
+    renderLinesOnPage(doc, pageLines, maxWidth, pageIndex > 0);
+    drawPageFooter(doc, pageIndex, pageCount);
+  });
 
   doc.save(fileName ?? letterPdfFileName());
 }

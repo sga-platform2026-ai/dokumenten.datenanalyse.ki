@@ -1,4 +1,8 @@
 import type { ReactNode } from "react";
+import {
+  PREVIEW_LETTER_PAGINATION,
+  paginateLetterText,
+} from "@/lib/letterPagination";
 import { normalizeLetterText } from "@/lib/normalizeLetter";
 
 interface LetterPreviewProps {
@@ -18,7 +22,9 @@ function formatNow(): string {
 }
 
 export function LetterPreview({ letter, mock, actions }: LetterPreviewProps) {
-  const lines = normalizeLetterText(letter).split("\n");
+  const body = normalizeLetterText(letter);
+  const pages = paginateLetterText(body, PREVIEW_LETTER_PAGINATION);
+  const pageCount = pages.length;
 
   return (
     <section className="letter-wrap fade-up" aria-live="polite">
@@ -26,28 +32,47 @@ export function LetterPreview({ letter, mock, actions }: LetterPreviewProps) {
         <div>
           <h2>Antwortschreiben · Entwurf</h2>
           <div className="meta">
-            Generiert am {formatNow()} ·{" "}
-            Modell{" "}
+            Generiert am {formatNow()} · Modell{" "}
             <span className="mono">{mock ? "demo-mock" : "grok-doc-de"}</span>
             {mock && " · Demo-Modus"}
+            {pageCount > 1 && <> · {pageCount} Seiten</>}
           </div>
         </div>
         {actions}
       </div>
 
-      <article className="sheet" id="letter-preview">
-        <span className="fold-mark t" />
-        <span className="fold-mark b" />
-
-        <div className="body">
-          {lines.map((line, i) => {
-            if (line.trim() === "") {
-              return <br key={i} />;
+      <div className="letter-pages">
+        {pages.map((pageLines, pageIndex) => (
+          <article
+            key={pageIndex}
+            className="sheet"
+            id={pageIndex === 0 ? "letter-preview" : undefined}
+            aria-label={
+              pageCount > 1
+                ? `Briefseite ${pageIndex + 1} von ${pageCount}`
+                : "Antwortbrief"
             }
-            return <p key={i}>{line}</p>;
-          })}
-        </div>
-      </article>
+          >
+            <span className="fold-mark t" aria-hidden />
+            <span className="fold-mark b" aria-hidden />
+
+            {pageCount > 1 && (
+              <span className="sheet-page-label">
+                Seite {pageIndex + 1} von {pageCount}
+              </span>
+            )}
+
+            <div className="body">
+              {pageLines.map((line, lineIndex) => {
+                if (line.trim() === "") {
+                  return <br key={lineIndex} />;
+                }
+                return <p key={lineIndex}>{line}</p>;
+              })}
+            </div>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }

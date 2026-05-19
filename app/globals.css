@@ -429,6 +429,10 @@ h1.page-title {
 .letter-head .meta { color: var(--muted); font-size: 13px; margin-top: 4px }
 .letter-actions { display: flex; gap: 8px; flex-wrap: wrap }
 
+.letter-pages {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 32px;
+}
 .sheet {
   --w: 820px;
   width: min(var(--w), 100%);
@@ -446,6 +450,12 @@ h1.page-title {
   position: relative;
   border-radius: 2px;
   overflow: hidden;
+}
+.sheet-page-label {
+  position: absolute; right: 32px; bottom: 24px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px; color: #888;
+  letter-spacing: .04em;
 }
 .sheet::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -601,6 +611,7 @@ h1.page-title {
     border: none;
     background: #fff;
   }
+  .letter-pages { gap: 0 }
   .sheet {
     box-shadow: none;
     border: none;
@@ -609,5 +620,12 @@ h1.page-title {
     max-width: none;
     margin: 0;
     padding: 18mm 20mm;
+    page-break-after: always;
+    break-after: page;
   }
+  .sheet:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+  .sheet-page-label { display: none }
 }
