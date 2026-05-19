@@ -36,3 +36,25 @@ ${json}`;
   assert.equal(articles[1].id, "27");
   assert.ok(!displayAnalysis.includes("GA_IV_ARTICLES"));
 });
+
+test("applyNormalizedArticlesToAnalysis parses articleReviews JSON", () => {
+  const raw = `5.2. Verletzte Artikel
+<!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"7-2","violated":true,"reason":"Anrede"},{"id":"27","violated":true,"reason":"Ehre"},{"id":"1","violated":false}]}<!--/GA_IV_ARTICLES-->`;
+
+  const { articles } = applyNormalizedArticlesToAnalysis(raw);
+  assert.equal(articles.length, 2);
+  assert.equal(articles[0].id, "7-2");
+  assert.equal(articles[1].id, "27");
+});
+
+test("applyNormalizedArticlesToAnalysis parses multiline prose reasons", () => {
+  const raw = `5.2. Verletzte Artikel des IV. Genfer Abkommens
+Artikel 7 Abs. 2 GA IV
+Begründung mit Bezug zum Schreiben: Anrede Herr Günzel
+Artikel 27 GA IV – Eingriff in die Ehre`;
+
+  const { articles } = applyNormalizedArticlesToAnalysis(raw);
+  assert.equal(articles.length, 2);
+  assert.ok(articles[0].reason.includes("Anrede"));
+  assert.equal(articles[1].id, "27");
+});

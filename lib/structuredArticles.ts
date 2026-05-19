@@ -19,8 +19,16 @@ export interface NormalizedViolatedArticle {
   reason: string;
 }
 
+interface ArticleReviewInput {
+  id: string;
+  violated?: boolean;
+  label?: string;
+  reason?: string;
+}
+
 interface ArticlesJsonPayload {
   violatedArticles?: ViolatedArticleInput[];
+  articleReviews?: ArticleReviewInput[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -39,6 +47,44 @@ function parseArticlesPayload(raw: string): ArticlesJsonPayload | null {
   }
 }
 
+function reviewsToViolatedInputs(
+  reviews: ArticleReviewInput[],
+): ViolatedArticleInput[] {
+  const items: ViolatedArticleInput[] = [];
+
+  for (const review of reviews) {
+    if (review.violated === false) {
+      continue;
+    }
+    const reason = review.reason?.trim() ?? "";
+    if (!reason && review.violated !== true) {
+      continue;
+    }
+    if (!reason) {
+      continue;
+    }
+    items.push({
+      id: review.id,
+      label: review.label,
+      reason,
+    });
+  }
+
+  return items;
+}
+
+function payloadToViolatedInputs(
+  payload: ArticlesJsonPayload,
+): ViolatedArticleInput[] | null {
+  if (payload.articleReviews && Array.isArray(payload.articleReviews)) {
+    return reviewsToViolatedInputs(payload.articleReviews);
+  }
+  if (payload.violatedArticles && Array.isArray(payload.violatedArticles)) {
+    return payload.violatedArticles;
+  }
+  return null;
+}
+
 export function extractStructuredArticles(
   text: string,
 ): ViolatedArticleInput[] | null {
@@ -52,11 +98,11 @@ export function extractStructuredArticles(
     .slice(start + ARTICLES_JSON_START.length, end)
     .trim();
   const payload = parseArticlesPayload(jsonRaw);
-  if (!payload?.violatedArticles || !Array.isArray(payload.violatedArticles)) {
+  if (!payload) {
     return null;
   }
 
-  return payload.violatedArticles;
+  return payloadToViolatedInputs(payload);
 }
 
 export function stripArticlesJsonBlock(text: string): string {
@@ -140,9 +186,7 @@ export function applyNormalizedArticlesToAnalysis(analysis: string): {
   return { displayAnalysis, articles };
 }
 
-function parseArticlesFromLegacyText(
-  analysis: string,
-): ViolatedArticleInput[] {
+function getArticlesSectionBody(analysis: string): string {
   const articlesSection = analysis.split(/5\.2\.\s*Verletzte Artikel/i)[1] ?? "";
   const endMarkers = ["6. Fertig formulierter Antwortbrief", "6. Antwortbrief"];
   let sectionBody = articlesSection;
@@ -152,26 +196,75 @@ function parseArticlesFromLegacyText(
       sectionBody = sectionBody.slice(0, idx);
     }
   }
+  return sectionBody;
+}
 
-  return sectionBody
+function splitArticleLine(line: string): ViolatedArticleInput | null {
+  const dashIndex = line.indexOf("–");
+  const hyphenIndex = line.indexOf("-");
+  const splitIndex =
+    dashIndex > -1 ? dashIndex : hyphenIndex > -1 ? hyphenIndex : -1;
+
+  if (splitIndex < 0) {
+    const id = normalizeArticleId(line);
+    if (!id) {
+      return null;
+    }
+    return { id, label: line, reason: "" };
+  }
+
+  const label = line.slice(0, splitIndex).trim();
+  const reason = line.slice(splitIndex + 1).trim();
+  const id = normalizeArticleId(label);
+  if (!id) {
+    return null;
+  }
+  return { id, label, reason };
+}
+
+function parseArticlesFromLegacyText(
+  analysis: string,
+): ViolatedArticleInput[] {
+  const lines = getArticlesSectionBody(analysis)
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => /^Artikel\s+\d+/iu.test(line))
-    .map((line) => {
-      const dashIndex = line.indexOf("–");
-      const hyphenIndex = line.indexOf("-");
-      const splitIndex =
-        dashIndex > -1 ? dashIndex : hyphenIndex > -1 ? hyphenIndex : -1;
+    .filter((line) => line.length > 0 && !line.startsWith("<!--"));
 
-      if (splitIndex < 0) {
-        return { id: line, reason: "" };
+  const results: ViolatedArticleInput[] = [];
+  let pending: ViolatedArticleInput | null = null;
+
+  for (const line of lines) {
+    if (/^Artikel\s+\d+/iu.test(line)) {
+      if (pending?.reason) {
+        results.push(pending);
       }
+      pending = splitArticleLine(line);
+      if (pending?.reason) {
+        results.push(pending);
+        pending = null;
+      }
+      continue;
+    }
 
-      const label = line.slice(0, splitIndex).trim();
-      const reason = line.slice(splitIndex + 1).trim();
-      const id = normalizeArticleId(label) ?? label;
-      return { id, label, reason };
-    });
+    if (pending) {
+      const reasonFromLabel = line.replace(
+        /^Begründung(?:\s+mit\s+Bezug\s+zum\s+Schreiben)?\s*:\s*/iu,
+        "",
+      );
+      results.push({
+        ...pending,
+        reason: reasonFromLabel || line,
+      });
+      pending = null;
+      continue;
+    }
+  }
+
+  if (pending?.reason) {
+    results.push(pending);
+  }
+
+  return results;
 }
 
 function replaceArticlesSection(analysis: string, section: string): string {

@@ -16,7 +16,7 @@ import type { AnalyzeResponse } from "@/types";
 const DEFAULT_GROK_MODEL = "grok-3-latest";
 const REQUEST_TIMEOUT_MS = 180_000;
 /** Cache-Version: Zwei-Call-Analyse + Artikel-Union */
-const ANALYSIS_CACHE_VERSION = "v2-two-call";
+const ANALYSIS_CACHE_VERSION = "v3-checklist-reviews";
 
 interface GrokConfig {
   apiKey: string;
@@ -84,18 +84,40 @@ export async function analyzeDocument(
   try {
     const userDocument = `Hochgeladenes Dokument:\n\n${documentText}`;
 
-    const analysisRaw = await grokChat({
+    let analysisRaw = await grokChat({
       apiKey,
       apiUrl,
       model,
       system: buildArticleCheckSystemMessage(),
       user: userDocument,
-      temperature: 0.1,
+      temperature: 0.2,
       maxTokens: 8192,
       signal: controller.signal,
     });
 
-    const { articles } = applyNormalizedArticlesToAnalysis(analysisRaw);
+    let { articles } = applyNormalizedArticlesToAnalysis(analysisRaw);
+
+    if (articles.length <= 2) {
+      analysisRaw = await grokChat({
+        apiKey,
+        apiUrl,
+        model,
+        system: buildArticleCheckSystemMessage(),
+        user: `${userDocument}
+
+---
+Die erste Auswertung war zu knapp (${articles.length} Artikel). Prüfe alle Checklisten-Artikel erneut am vollen Dokumententext.
+Typische behördliche Schreiben betreffen oft mehrere Vorschriften (z. B. 7-2, 27, 31–34, 47, 101, 131).
+Liefere vollständige Abschnitte 1 und 5.2 mit articleReviews für jede Checklisten-ID.
+
+Vorläufige Analyse:
+${analysisRaw}`,
+        temperature: 0.2,
+        maxTokens: 8192,
+        signal: controller.signal,
+      });
+      ({ articles } = applyNormalizedArticlesToAnalysis(analysisRaw));
+    }
 
     const letterUser = `${userDocument}
 
