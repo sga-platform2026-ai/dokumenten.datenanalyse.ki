@@ -1,7 +1,11 @@
+import type { ReactNode } from "react";
+import { normalizeLetterText } from "@/lib/normalizeLetter";
+
 interface LetterPreviewProps {
   letter: string;
   generatedAt?: string;
   mock?: boolean;
+  actions?: ReactNode;
 }
 
 function formatNow(): string {
@@ -13,8 +17,8 @@ function formatNow(): string {
   return `${dd}.${mm}.${d.getFullYear()}, ${hh}:${min}`;
 }
 
-export function LetterPreview({ letter, mock }: LetterPreviewProps) {
-  const lines = letter.split("\n");
+export function LetterPreview({ letter, mock, actions }: LetterPreviewProps) {
+  const lines = normalizeLetterText(letter).split("\n");
 
   return (
     <section className="letter-wrap fade-up" aria-live="polite">
@@ -28,6 +32,7 @@ export function LetterPreview({ letter, mock }: LetterPreviewProps) {
             {mock && " · Demo-Modus"}
           </div>
         </div>
+        {actions}
       </div>
 
       <article className="sheet" id="letter-preview">

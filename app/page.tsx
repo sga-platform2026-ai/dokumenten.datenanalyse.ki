@@ -130,16 +130,12 @@ export default function HomePage() {
 
         {result && (
           <div ref={letterRef}>
-            <div style={{ margin: "28px 0 18px" }}>
-              <ActionBar
-                analysisText={result.analysis}
-                letterText={result.letter}
-                onReset={reset}
-              />
-            </div>
             <LetterPreview
               letter={result.letter}
               mock={result.metadata.mock}
+              actions={
+                <ActionBar letterText={result.letter} onReset={reset} />
+              }
             />
           </div>
         )}

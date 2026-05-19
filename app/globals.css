@@ -446,6 +446,31 @@ h1.page-title {
 }
 
 @media print {
-  .topbar, .shell > *:not(.letter-wrap), .letter-wrap > .letter-head { display: none !important }
-  .sheet { box-shadow: none; border: none; aspect-ratio: auto; padding: 0 }
+  .topbar,
+  .eyebrow,
+  .page-title,
+  .page-lede,
+  .rail,
+  .grid,
+  .footer-note,
+  .letter-head,
+  .letter-actions,
+  .toast {
+    display: none !important;
+  }
+  .letter-wrap {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: #fff;
+  }
+  .sheet {
+    box-shadow: none;
+    border: none;
+    aspect-ratio: auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 18mm 20mm;
+  }
 }
