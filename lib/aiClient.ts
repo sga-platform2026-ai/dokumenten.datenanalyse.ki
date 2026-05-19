@@ -17,7 +17,7 @@ import type { AnalyzeDiagnostics, AnalyzeResponse } from "@/types";
 const DEFAULT_GROK_MODEL = "grok-3-latest";
 const REQUEST_TIMEOUT_MS = 180_000;
 /** Cache-Version: erhöht bei jeder Pipeline-Änderung. */
-const ANALYSIS_CACHE_VERSION = "v4-diagnostics";
+const ANALYSIS_CACHE_VERSION = "v5-affected";
 const RAW_PREVIEW_CHARS = 400;
 
 interface GrokConfig {
@@ -73,6 +73,7 @@ function buildDiagnostics(
     structuredCount: parsed.structuredCount,
     proseCount: parsed.proseCount,
     mergedCount: parsed.articles.length,
+    affectedCount: parsed.affected.length,
     retried,
     retryReason,
     documentLength: documentText.length,
@@ -82,6 +83,7 @@ function buildDiagnostics(
 function logAnalysisDiagnostics(
   step: string,
   diagnostics: AnalyzeDiagnostics,
+  affectedCount: number,
 ): void {
   console.info(
     `[analyzeDocument:${step}]`,
@@ -94,6 +96,7 @@ function logAnalysisDiagnostics(
       structuredCount: diagnostics.structuredCount,
       proseCount: diagnostics.proseCount,
       mergedCount: diagnostics.mergedCount,
+      affectedCount,
       retried: diagnostics.retried,
       retryReason: diagnostics.retryReason,
       documentLength: diagnostics.documentLength,
@@ -146,6 +149,7 @@ export async function analyzeDocument(
     logAnalysisDiagnostics(
       "call1",
       buildDiagnostics(documentText, analysisRaw, parsed, false, undefined),
+      parsed.affected.length,
     );
 
     if (parsed.articles.length <= 2) {
@@ -174,6 +178,7 @@ Liefere Abschnitt 1 (Absender) und 5.2 inkl. Pflicht-JSON.`;
       logAnalysisDiagnostics(
         "call1-retry",
         buildDiagnostics(documentText, analysisRaw, parsed, true, retryReason),
+        parsed.affected.length,
       );
     }
 

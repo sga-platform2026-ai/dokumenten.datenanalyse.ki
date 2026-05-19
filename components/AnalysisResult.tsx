@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { parseAnalysisSections } from "@/lib/parseAiResponse";
 
 interface AnalysisResultProps {
@@ -9,6 +12,8 @@ interface AnalysisResultProps {
 export function AnalysisResult({ analysis, fileName, mock }: AnalysisResultProps) {
   const parsed = parseAnalysisSections(analysis);
   const articleCount = parsed.articles.length;
+  const affectedCount = parsed.affected.length;
+  const [affectedOpen, setAffectedOpen] = useState(false);
 
   return (
     <aside className="card" id="data-card">
@@ -66,10 +71,15 @@ export function AnalysisResult({ analysis, fileName, mock }: AnalysisResultProps
         <dd>
           {articleCount > 0 ? (
             <span className="badge warn">
-              {articleCount} {articleCount === 1 ? "Artikel berührt" : "Artikel berührt"}
+              {articleCount} {articleCount === 1 ? "Artikel verletzt" : "Artikel verletzt"}
             </span>
           ) : (
             <span className="badge">Analyse abgeschlossen</span>
+          )}
+          {affectedCount > 0 && (
+            <span className="badge" style={{ marginLeft: 6 }}>
+              +{affectedCount} thematisch berührt
+            </span>
           )}
         </dd>
 
@@ -89,7 +99,7 @@ export function AnalysisResult({ analysis, fileName, mock }: AnalysisResultProps
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {parsed.articles.map((item) => (
               <div
-                key={`${item.article}`}
+                key={`v-${item.article}`}
                 style={{
                   background: "rgba(180,138,58,.07)",
                   border: "1px solid rgba(180,138,58,.25)",
@@ -107,6 +117,82 @@ export function AnalysisResult({ analysis, fileName, mock }: AnalysisResultProps
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {affectedCount > 0 && (
+        <div style={{ marginTop: 18 }}>
+          <button
+            type="button"
+            onClick={() => setAffectedOpen((open) => !open)}
+            style={{
+              all: "unset",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              padding: "8px 0",
+              borderTop: "1px dashed var(--line)",
+            }}
+            aria-expanded={affectedOpen}
+          >
+            <span className="label">
+              Weitere thematisch berührte Artikel ({affectedCount})
+            </span>
+            <span
+              style={{
+                fontSize: 14,
+                color: "var(--muted)",
+                transition: "transform .15s ease",
+                transform: affectedOpen ? "rotate(90deg)" : "none",
+              }}
+              aria-hidden
+            >
+              ›
+            </span>
+          </button>
+          {affectedOpen && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                marginTop: 8,
+              }}
+            >
+              {parsed.affected.map((item) => (
+                <div
+                  key={`a-${item.article}`}
+                  style={{
+                    background: "var(--paper-2)",
+                    border: "1px solid var(--line)",
+                    borderRadius: 6,
+                    padding: "6px 10px",
+                    fontSize: 12.5,
+                  }}
+                >
+                  <div style={{ fontWeight: 600, color: "var(--ink)", fontSize: 12 }}>
+                    {item.article}
+                  </div>
+                  {item.note && (
+                    <div style={{ color: "var(--muted)", marginTop: 2 }}>{item.note}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <p
+            style={{
+              marginTop: 8,
+              fontSize: 11.5,
+              color: "var(--muted)",
+              lineHeight: 1.45,
+            }}
+          >
+            Thematisch einschlägige Artikel ohne konkreten Bezug zum Schreiben. Nicht
+            Bestandteil des Antwortbriefes.
+          </p>
         </div>
       )}
     </aside>

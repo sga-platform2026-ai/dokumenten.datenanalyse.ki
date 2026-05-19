@@ -16,30 +16,44 @@ AUFGABE: Vollständige Prüfung eines amtlichen Schreibens. Antworte NUR mit Abs
 2. Extrahiere Absender, Sachbearbeiter, Behördenleitung (fehlende Leitung recherchieren).
 3. Die angeschriebene Person ist geschützte Zivilperson (Art. 4 GA IV).
 
-4. PFLICHT-CHECKLISTE – jeden Artikel einzeln am Schreiben prüfen:
+4. PFLICHT-CHECKLISTE – jeden Artikel einzeln am Schreiben prüfen und in zwei Gruppen einordnen:
+
+   GRUPPE A – „violated“: Es gibt einen KONKRETEN, BENENNBAREN Bezug zum Wortlaut/Sachverhalt des Schreibens
+   (Zitate, Fristen, Anrede, Androhungen, Beschwerdewege etc.).
+   Nur diese Artikel kommen in die Hauptliste und in den Antwortbrief.
+
+   GRUPPE B – „affected“ (thematisch berührt): Der Artikel ist im Schutzsystem des GA IV einschlägig,
+   es gibt aber keinen direkten Bezug zum konkreten Inhalt des Schreibens.
+   Diese Artikel werden als „weitere thematisch berührte Artikel“ in der UI separat angezeigt.
+
+   Prüfungsliste:
 ${CHECKLIST_LINES}
 
 Prüf-Hinweise (Beispiele, nicht abschließend):
-- Anrede „Herr …“ / „Frau …“ / „Sehr geehrter Herr …“ → Art. 7 Abs. 2 GA IV
-- Fristen, Kostenandrohungen, Verbotsandrohungen → Art. 31, 32, 33, 34 GA IV (getrennt auflisten)
-- Eingriff in Ehre, Würde, Privatsphäre → Art. 27 GA IV
-- Verschlechterung der Rechtsstellung, Entzug von Rechten → Art. 47 GA IV
-- Fehlender oder unwirksamer Beschwerdeweg → Art. 101 GA IV
-- Keine Untersuchung / keine Prüfung bei Beschwerde → Art. 131 GA IV
+- Anrede „Herr …“ / „Frau …“ / „Sehr geehrter Herr …“ → violated Art. 7 Abs. 2 GA IV
+- Fristen, Kostenandrohungen, Verbotsandrohungen → violated Art. 31, 32, 33, 34 GA IV (getrennt prüfen)
+- Eingriff in Ehre, Würde, Privatsphäre → violated Art. 27 GA IV
+- Verschlechterung der Rechtsstellung, Entzug von Rechten → violated Art. 47 GA IV
+- Fehlender oder unwirksamer Beschwerdeweg → violated Art. 101 GA IV
+- Keine Untersuchung / keine Prüfung bei Beschwerde → violated Art. 131 GA IV
+- Allgemeine Schutzpflicht der Vertragsparteien (kein konkretes Verhalten) → affected Art. 1
+- Status der Zivilperson grundsätzlich betroffen (kein konkreter Verstoß) → affected Art. 4
+- Schutzmacht / Verbreitungspflicht ohne konkreten Bezug → affected Art. 10, 144
 
 5.2. Verletzte Artikel des IV. Genfer Abkommens
 Pro Zeile genau: Artikel … GA IV – konkrete Begründung mit Bezug zum Schreiben
-(Nur verletzte Artikel; jede Nummer höchstens einmal; mehrere Verstöße sind üblich.)
+(Nur violated-Artikel; jede Nummer höchstens einmal; mehrere Verstöße sind üblich.)
 
 PFLICHT – direkt danach eine Zeile gültiges JSON:
-<!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"1","violated":false},{"id":"7-2","violated":true,"label":"Artikel 7 Abs. 2 GA IV","reason":"…"}]}<!--/GA_IV_ARTICLES-->
+<!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"1","violated":false,"affected":true,"reason":"Allgemeine Schutzpflicht der Vertragsparteien"},{"id":"7-2","violated":true,"label":"Artikel 7 Abs. 2 GA IV","reason":"konkrete Anrede 'Sehr geehrter Herr …'"}]}<!--/GA_IV_ARTICLES-->
 
 JSON-Regeln:
 - articleReviews: für JEDE ID aus der Checkliste genau ein Eintrag (${GA_IV_CANONICAL_ARTICLE_ORDER.join(", ")})
-- violated: true nur bei tatsächlichem Bezug zum Schreiben; sonst false
+- violated: true nur bei KONKRETEM Bezug zum Schreiben (Zitat/Sachverhalt)
+- affected: true wenn der Artikel thematisch zum Schutzsystem passt, aber kein konkreter Verstoß im Text steht
+- ein Artikel ist entweder violated ODER affected (nicht beides true); sonst false/false
 - bei violated:true: reason mit konkretem Wortlaut/Zitat aus dem Schreiben, nicht leer
-- violatedArticles (alternativ erlaubt): nur Einträge mit Verstößen
-- Prosa und JSON: dieselben violated:true-Einträge (gleiche IDs)
+- bei affected:true: reason mit kurzer Schutzbeschreibung (allgemein)
 
 Kein Abschnitt 6.`;
 

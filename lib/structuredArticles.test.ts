@@ -87,3 +87,25 @@ Artikel 27 GA IV – konkret`;
   const { articles } = applyNormalizedArticlesToAnalysis(raw);
   assert.equal(articles.length, 2);
 });
+
+test("articleReviews mit affected:true ergeben separate affected-Liste", () => {
+  const raw = `5.2. Verletzte Artikel
+<!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"7-2","violated":true,"reason":"Anrede"},{"id":"1","violated":false,"affected":true,"reason":"Allgemeine Schutzpflicht"},{"id":"4","violated":false,"affected":true,"reason":"Zivilpersonenstatus"},{"id":"27","violated":false,"affected":false}]}<!--/GA_IV_ARTICLES-->`;
+
+  const result = applyNormalizedArticlesToAnalysis(raw);
+  assert.equal(result.articles.length, 1, "nur violated=true zählt als Verstoß");
+  assert.equal(result.articles[0].id, "7-2");
+  assert.equal(result.affected.length, 2, "affected enthält Art. 1 und 4");
+  assert.equal(result.affected[0].id, "1");
+  assert.equal(result.affected[1].id, "4");
+  assert.equal(result.affectedCount, 2);
+});
+
+test("affected schließt bereits violated Artikel aus", () => {
+  const raw = `<!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"27","violated":true,"reason":"konkret"}],"potentiallyAffected":[{"id":"27","note":"doppelt"},{"id":"1","note":"allg."}]}<!--/GA_IV_ARTICLES-->`;
+
+  const result = applyNormalizedArticlesToAnalysis(raw);
+  assert.equal(result.articles.length, 1);
+  assert.equal(result.affected.length, 1);
+  assert.equal(result.affected[0].id, "1");
+});

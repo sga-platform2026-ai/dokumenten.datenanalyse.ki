@@ -22,13 +22,21 @@ export interface NormalizedViolatedArticle {
 interface ArticleReviewInput {
   id: string;
   violated?: boolean;
+  affected?: boolean;
   label?: string;
   reason?: string;
+}
+
+interface PotentiallyAffectedInput {
+  id: string;
+  label?: string;
+  note?: string;
 }
 
 interface ArticlesJsonPayload {
   violatedArticles?: ViolatedArticleInput[];
   articleReviews?: ArticleReviewInput[];
+  potentiallyAffected?: PotentiallyAffectedInput[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -73,20 +81,59 @@ function reviewsToViolatedInputs(
   return items;
 }
 
-function payloadToViolatedInputs(
+function reviewsToAffectedInputs(
+  reviews: ArticleReviewInput[],
+): PotentiallyAffectedInput[] {
+  const items: PotentiallyAffectedInput[] = [];
+
+  for (const review of reviews) {
+    if (review.violated === true) {
+      continue;
+    }
+    if (review.affected !== true) {
+      continue;
+    }
+    items.push({
+      id: review.id,
+      label: review.label,
+      note: review.reason?.trim() || undefined,
+    });
+  }
+
+  return items;
+}
+
+interface PayloadExtractionResult {
+  violated: ViolatedArticleInput[] | null;
+  affected: PotentiallyAffectedInput[];
+}
+
+function payloadToExtraction(
   payload: ArticlesJsonPayload,
-): ViolatedArticleInput[] | null {
+): PayloadExtractionResult {
+  let violated: ViolatedArticleInput[] | null = null;
+  let affected: PotentiallyAffectedInput[] = [];
+
   if (payload.articleReviews && Array.isArray(payload.articleReviews)) {
-    return reviewsToViolatedInputs(payload.articleReviews);
+    violated = reviewsToViolatedInputs(payload.articleReviews);
+    affected = reviewsToAffectedInputs(payload.articleReviews);
+  } else if (
+    payload.violatedArticles &&
+    Array.isArray(payload.violatedArticles)
+  ) {
+    violated = payload.violatedArticles;
   }
-  if (payload.violatedArticles && Array.isArray(payload.violatedArticles)) {
-    return payload.violatedArticles;
+
+  if (payload.potentiallyAffected && Array.isArray(payload.potentiallyAffected)) {
+    affected = [...affected, ...payload.potentiallyAffected];
   }
-  return null;
+
+  return { violated, affected };
 }
 
 export interface ExtractStructuredResult {
   items: ViolatedArticleInput[] | null;
+  affectedItems: PotentiallyAffectedInput[];
   hasJsonStart: boolean;
   hasJsonEnd: boolean;
   jsonValid: boolean;
@@ -119,6 +166,7 @@ export function extractStructuredArticlesDetailed(
   if (start < 0) {
     return {
       items: null,
+      affectedItems: [],
       hasJsonStart: false,
       hasJsonEnd: false,
       jsonValid: false,
@@ -142,6 +190,7 @@ export function extractStructuredArticlesDetailed(
   if (!jsonRaw) {
     return {
       items: null,
+      affectedItems: [],
       hasJsonStart: true,
       hasJsonEnd,
       jsonValid: false,
@@ -153,6 +202,7 @@ export function extractStructuredArticlesDetailed(
   if (!payload) {
     return {
       items: null,
+      affectedItems: [],
       hasJsonStart: true,
       hasJsonEnd,
       jsonValid: false,
@@ -160,9 +210,10 @@ export function extractStructuredArticlesDetailed(
     };
   }
 
-  const items = payloadToViolatedInputs(payload);
+  const { violated, affected } = payloadToExtraction(payload);
   return {
-    items,
+    items: violated,
+    affectedItems: affected,
     hasJsonStart: true,
     hasJsonEnd,
     jsonValid: true,
@@ -236,15 +287,45 @@ export function buildArticlesJsonBlock(
   return `${ARTICLES_JSON_START}${JSON.stringify(payload)}${ARTICLES_JSON_END}`;
 }
 
+export interface NormalizedAffectedArticle {
+  id: string;
+  article: string;
+  note?: string;
+}
+
 export interface AnalyzeArticlesResult {
   displayAnalysis: string;
   articles: NormalizedViolatedArticle[];
+  affected: NormalizedAffectedArticle[];
   structuredCount: number;
   proseCount: number;
+  affectedCount: number;
   hasJsonStart: boolean;
   hasJsonEnd: boolean;
   jsonValid: boolean;
   jsonRecovered: boolean;
+}
+
+function normalizeAffectedArticles(
+  items: PotentiallyAffectedInput[],
+  excludeIds: Set<string>,
+): NormalizedAffectedArticle[] {
+  const byId = new Map<string, NormalizedAffectedArticle>();
+
+  for (const item of items) {
+    const id = normalizeArticleId(item.id) ?? normalizeArticleId(item.label ?? "");
+    if (!id || excludeIds.has(id)) {
+      continue;
+    }
+    const article = item.label?.trim() || getArticleLabel(id);
+    const note = item.note?.trim() || undefined;
+    const existing = byId.get(id);
+    if (!existing || (note && (!existing.note || note.length > existing.note.length))) {
+      byId.set(id, { id, article, note });
+    }
+  }
+
+  return [...byId.values()].sort((a, b) => compareArticleIds(a.id, b.id));
 }
 
 /** Ersetzt Abschnitt 5.2 durch normalisierte Liste und entfernt JSON-Marker aus dem Anzeigetext. */
@@ -262,14 +343,19 @@ export function applyNormalizedArticlesToAnalysis(
   mergedInputs.push(...prose);
   const articles = normalizeViolatedArticles(mergedInputs);
 
+  const violatedIds = new Set(articles.map((a) => a.id));
+  const affected = normalizeAffectedArticles(detail.affectedItems, violatedIds);
+
   const section = formatArticlesSection(articles);
   const displayAnalysis = replaceArticlesSection(stripped, section);
 
   return {
     displayAnalysis,
     articles,
+    affected,
     structuredCount: detail.items?.length ?? 0,
     proseCount: prose.length,
+    affectedCount: affected.length,
     hasJsonStart: detail.hasJsonStart,
     hasJsonEnd: detail.hasJsonEnd,
     jsonValid: detail.jsonValid,

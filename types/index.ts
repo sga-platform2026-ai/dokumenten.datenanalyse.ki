@@ -47,6 +47,7 @@ export interface AnalyzeDiagnostics {
   structuredCount: number;
   proseCount: number;
   mergedCount: number;
+  affectedCount: number;
   retried: boolean;
   retryReason?: string;
   documentLength: number;
@@ -73,6 +74,7 @@ export interface ParsedAnalysis {
   clerk?: string;
   leader?: string;
   articles: Array<{ article: string; reason: string }>;
+  affected: Array<{ article: string; note?: string }>;
   raw: string;
 }
 

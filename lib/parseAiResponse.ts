@@ -30,7 +30,7 @@ export function splitAiResponse(rawContent: string): Pick<AnalyzeResponse, "anal
 }
 
 export function parseAnalysisSections(analysis: string): ParsedAnalysis {
-  const { displayAnalysis, articles: normalized } =
+  const { displayAnalysis, articles: normalized, affected } =
     applyNormalizedArticlesToAnalysis(analysis);
   const raw = displayAnalysis.trim();
   const authorityMatch = raw.match(
@@ -48,11 +48,17 @@ export function parseAnalysisSections(analysis: string): ParsedAnalysis {
     reason,
   }));
 
+  const affectedView = affected.map(({ article, note }) => ({
+    article,
+    note,
+  }));
+
   return {
     authority: authorityMatch?.[1]?.trim(),
     clerk: clerkMatch?.[1]?.trim(),
     leader: leaderMatch?.[1]?.trim(),
     articles,
+    affected: affectedView,
     raw,
   };
 }

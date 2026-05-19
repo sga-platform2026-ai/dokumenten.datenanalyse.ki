@@ -71,6 +71,9 @@ export function DiagnosticsPanel({ diagnostics, cached }: DiagnosticsPanelProps)
           <b>{diagnostics.mergedCount}</b>
         </dd>
 
+        <dt>Thematisch berührt</dt>
+        <dd>{diagnostics.affectedCount}</dd>
+
         {diagnostics.retryReason && (
           <>
             <dt>Retry-Grund</dt>
