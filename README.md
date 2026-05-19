@@ -98,9 +98,31 @@ Response:
 }
 ```
 
+## GitHub Repository
+
+**Ziel-Repository:** [sga-platform2026-ai/dokumenten.datenanalyse.ki](https://github.com/sga-platform2026-ai/dokumenten.datenanalyse.ki)
+
+Remote (lokal):
+
+```text
+origin → https://github.com/sga-platform2026-ai/dokumenten.datenanalyse.ki.git
+```
+
+### Ersten Push ausführen
+
+Mit einem GitHub-Konto, das **Schreibrecht** auf die Organisation `sga-platform2026-ai` hat:
+
+```powershell
+.\scripts\push-to-sga.ps1
+```
+
+Oder manuell: `gh auth login` (Browser) → `git push -u origin main`
+
+**Hinweis:** `.env.local` wird nicht committed (API-Keys bleiben lokal).
+
 ## Vercel Deployment
 
-1. Repository mit Vercel verbinden
+1. Repository **sga-platform2026-ai/dokumenten.datenanalyse.ki** mit Vercel verbinden
 2. Framework Preset: **Next.js**
 3. Environment Variables in Vercel setzen (Namen wie in `.env.example`: `GROK_API_KEY`, optional `GROK_API_URL`, `GROK_MODEL`)
 4. Deploy – Build Command: `npm run build`
