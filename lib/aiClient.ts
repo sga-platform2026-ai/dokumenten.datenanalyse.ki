@@ -1,4 +1,4 @@
-import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
+import { buildSystemMessage } from "@/lib/knowledge/buildSystemMessage";
 import { createMockAnalyzeResponse } from "@/lib/mockData";
 import { splitAiResponse } from "@/lib/parseAiResponse";
 import type { AnalyzeResponse } from "@/types";
@@ -48,7 +48,7 @@ export async function analyzeDocument(
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: buildSystemMessage() },
           {
             role: "user",
             content: `Hochgeladenes Dokument:\n\n${documentText}`,

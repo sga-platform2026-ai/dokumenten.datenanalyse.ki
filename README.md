@@ -71,6 +71,17 @@ Die Datei **`.env.local`** ist bereits im Projekt vorhanden; tragen Sie dort Ihr
 
 Bilder ohne OCR liefern die Meldung: *„Dokument nicht ausreichend lesbar – bitte bessere Datei hochladen“*.
 
+## Wissensbasis (nur GA IV)
+
+Der vollständige Wortlaut des **Genfer Abkommens IV** (SR 0.518.51) aus der GAIA-PDF *Völkerrechtvorschriften* liegt in `lib/knowledge/ga-iv-knowledge.ts` und wird bei der Grok-Analyse zusammen mit dem Prüfauftrag (`lib/systemPrompt.ts`) als Systemnachricht mitgesendet. Zusatzprotokolle und andere Abkommen sind nicht enthalten.
+
+Aktualisieren nach neuer PDF-Version:
+
+```bash
+npm run extract:ga-iv
+# optional: node scripts/extract-ga-iv.mjs "C:\Pfad\zu\Voelkerrechtvorschriften.pdf"
+```
+
 ## API
 
 `POST /api/analyze`
@@ -134,7 +145,10 @@ app/
   page.tsx              # Tool-Oberfläche
   api/analyze/route.ts  # KI-Analyse (serverseitig)
 components/             # UI-Komponenten
-lib/                    # System-Prompt, KI-Client, Extraktion
+lib/
+  knowledge/            # GA-IV-Volltext (generiert), buildSystemMessage
+  systemPrompt.ts       # Prüfauftrag
+  aiClient.ts           # Grok + Wissensbasis
 hooks/                  # Upload-Workflow
 types/                  # TypeScript-Typen
 ```
