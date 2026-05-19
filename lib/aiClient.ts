@@ -4,7 +4,7 @@ import { splitAiResponse } from "@/lib/parseAiResponse";
 import type { AnalyzeResponse } from "@/types";
 
 const DEFAULT_GROK_URL = "https://api.x.ai/v1/chat/completions";
-const DEFAULT_GROK_MODEL = "grok-2-latest";
+const DEFAULT_GROK_MODEL = "grok-3-latest";
 const REQUEST_TIMEOUT_MS = 120_000;
 
 interface GrokChoice {

@@ -59,9 +59,15 @@ Die Datei **`.env.local`** ist bereits im Projekt vorhanden; tragen Sie dort Ihr
 |----------|---------|--------------|
 | `GROK_API_KEY` | Nein (ja für Live-KI) | API-Key von [console.x.ai](https://console.x.ai/). Ohne Key: Mock-Antworten. |
 | `GROK_API_URL` | Nein | Standard: `https://api.x.ai/v1/chat/completions` |
-| `GROK_MODEL` | Nein | Standard: `grok-2-latest` |
+| `GROK_MODEL` | Nein | Standard: `grok-3-latest` |
 
-**Vercel:** dieselben Variablennamen unter *Project → Settings → Environment Variables* setzen (mindestens `GROK_API_KEY` für Production).
+**Vercel:** dieselben Variablennamen unter *Project → Settings → Environment Variables* setzen (`GROK_API_KEY` und empfohlen `GROK_MODEL=grok-3-latest`).
+
+API-Key prüfen (lokal, nutzt `.env.local`):
+
+```bash
+npm run test:grok
+```
 
 ## Unterstützte Dateiformate
 
@@ -102,7 +108,7 @@ Response:
   "analysis": "…",
   "letter": "…",
   "metadata": {
-    "model": "grok-2-latest",
+    "model": "grok-3-latest",
     "provider": "grok",
     "timestamp": "…"
   }
