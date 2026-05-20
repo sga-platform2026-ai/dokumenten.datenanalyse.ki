@@ -44,6 +44,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 - Kein Leerzeichen um das `=`
 - Für **Production** aktivieren (ggf. auch **Preview**)
 - `.env.local` wird **nicht** automatisch nach Vercel übernommen
+- Lokal prüfen: `npm run check:auth` → bei `"enabled": true` dieselben drei Werte in Vercel eintragen
 
 Optional weiterhin:
 
