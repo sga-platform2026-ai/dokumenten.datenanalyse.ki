@@ -1,6 +1,6 @@
 # Dokumentenprüfung GA IV
 
-Moderne Web-App zur Prüfung amtlicher Schreiben nach dem IV. Genfer Abkommen (GA IV). Nutzer laden Dokumente hoch; die App extrahiert Text, prüft die Lesbarkeit und erstellt per KI eine strukturierte Analyse sowie einen Antwortbrief-Entwurf.
+Moderne Web-App zur Prüfung amtlicher Schreiben nach dem IV. Genfer Abkommen (GA IV). Nutzer laden Dokumente hoch; die App extrahiert Text, prüft die Lesbarkeit und erstellt per KI eine strukturierte GA-IV-Analyse (Ein-Call, ohne Antwortbrief).
 
 ## Tech-Stack
 
@@ -93,25 +93,24 @@ npm run test:grok
 
 Schlecht lesbare Scans liefern die Meldung: *„Dokument nicht ausreichend lesbar – bitte bessere Datei hochladen“*.
 
-## Grok-Konfiguration
+## Konfiguration (drei Dateien + API-Key)
 
-**Zentrale Datei:** [`config/Grok-Konfiguration.md`](config/Grok-Konfiguration.md) – Modell, `reasoning_effort`, Temperature, Tokens, Timeouts, Pipeline-Hinweise. Nur der API-Key liegt in `.env.local`.
+| Thema | Datei |
+|--------|--------|
+| Grok-API (Modell, Tokens, …) | [`config/Grok-Konfiguration.md`](config/Grok-Konfiguration.md) |
+| Systemprompt (Verhalten, Ausgabe) | [`config/GA-IV-Systemprompt.md`](config/GA-IV-Systemprompt.md) |
+| Wissensdatenbank (15 Artikel) | [`config/GA-IV-Wissensdatenbank.md`](config/GA-IV-Wissensdatenbank.md) |
+| API-Key | `.env.local` → `GROK_API_KEY` |
 
-Key testen: `npm run test:grok`
+Key testen: `npm run test:grok` · Wissens-MD erzeugen: `npm run gen:knowledge-md`
 
-## Wissensdatenbank (GA IV)
+## KI-Analyse
 
-**Lesen:** [`config/GA-IV-Wissensdatenbank.md`](config/GA-IV-Wissensdatenbank.md) – 15 Artikel mit Bedeutung, Prüfregeln und Stichwörtern.
+- **Ein Grok-Aufruf** pro Dokument (Schreiben analysieren), **kein Antwortbrief**
+- Ablauf: Upload → Lesbarkeit → **Schreiben analysieren** → Ergebnis in der Analyse-Karte
+- Ohne `GROK_API_KEY`: Mock-Daten
 
-**Technische Quelle:** `lib/knowledge/ga-iv-articles.ts` – nach Änderungen: `npm run gen:knowledge-md`
-
-## KI-Analyse / Prompts
-
-Die Dokumenten-Auswertung (Grok) ist derzeit **deaktiviert**: Es fehlen Prüfauftrag und Auswertungs-Prompts. Die **Wissensdatenbank** (15 Artikel) ist wieder vorhanden. Bis zur Reaktivierung liefert `POST /api/analyze` den Status **503** mit der Meldung *„KI-Analyse ist nicht konfiguriert …“*.
-
-Reaktivierung: Prüfauftrag und Prompts neu anlegen, `ANALYSIS_PROMPTS_CONFIGURED` in `lib/analysisConfig.ts` auf `true` setzen und `lib/aiClient.ts` wieder anbinden.
-
-Tests (Parser-Infrastruktur): `npm run test:articles`
+Tests: `npm run test:articles`
 
 ## API
 
@@ -131,7 +130,7 @@ Response:
 ```json
 {
   "analysis": "…",
-  "letter": "…",
+  "letter": "",
   "metadata": {
     "model": "grok-4.3",
     "provider": "grok",
@@ -179,8 +178,7 @@ components/             # UI-Komponenten
 lib/
   auth/                 # Session, Credentials, Middleware-Hilfen
   knowledge/            # GA-IV-Wissensdatenbank (15 Artikel)
-  analysisConfig.ts     # Schalter: Prompts konfiguriert ja/nein
-  aiClient.ts           # KI-Analyse (derzeit deaktiviert)
+  aiClient.ts           # Grok Ein-Call-Analyse
 middleware.ts           # Route-Schutz bei aktivem Auth
 hooks/                  # Upload-Workflow
 types/                  # TypeScript-Typen

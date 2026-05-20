@@ -190,8 +190,7 @@ export function AnalysisResult({ analysis, fileName, mock }: AnalysisResultProps
               lineHeight: 1.45,
             }}
           >
-            Thematisch einschlägige Artikel ohne konkreten Bezug zum Schreiben. Nicht
-            Bestandteil des Antwortbriefes.
+            Thematisch einschlägige Artikel ohne konkreten Bezug zum Schreiben.
           </p>
         </div>
       )}

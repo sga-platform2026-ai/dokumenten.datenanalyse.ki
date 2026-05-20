@@ -16,9 +16,6 @@ export interface GrokFileConfig {
   maxTokens: number;
   requestTimeoutMs: number;
   analysisCacheVersion: string;
-  letterTemperature: number;
-  letterMaxTokens: number;
-  letterReasoningEffort: GrokReasoningEffort;
   retryArticleThreshold: number;
 }
 
@@ -119,10 +116,10 @@ export function loadGrokFileConfig(): GrokFileConfig {
     temperature: asNumber(fields.temperature, 0),
     maxTokens: asNumber(fields.max_tokens, 8192),
     requestTimeoutMs: asNumber(fields.requestTimeoutMs, 180_000),
-    analysisCacheVersion: asString(fields.analysisCacheVersion, "v9-grok-md-config"),
-    letterTemperature: asNumber(fields.letter_temperature, 0.3),
-    letterMaxTokens: asNumber(fields.letter_max_tokens, 4096),
-    letterReasoningEffort: asReasoningEffort(fields.letter_reasoning_effort),
+    analysisCacheVersion: asString(
+      fields.analysisCacheVersion,
+      "v10-ein-call",
+    ),
     retryArticleThreshold: asNumber(fields.retryArticleThreshold, 2),
   };
 

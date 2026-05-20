@@ -22,7 +22,7 @@ interface GrokChatRequestBody {
   reasoning_effort?: GrokReasoningEffort;
 }
 
-export type GrokCallProfile = "article" | "letter";
+export type GrokCallProfile = "article";
 
 export interface GrokChatParams {
   apiKey: string;
@@ -36,17 +36,10 @@ export interface GrokChatParams {
   signal?: AbortSignal;
 }
 
-function paramsForProfile(
-  config: GrokRuntimeConfig,
-  profile: GrokCallProfile,
-): Pick<GrokChatParams, "temperature" | "maxTokens" | "reasoningEffort"> {
-  if (profile === "letter") {
-    return {
-      temperature: config.letterTemperature,
-      maxTokens: config.letterMaxTokens,
-      reasoningEffort: config.letterReasoningEffort,
-    };
-  }
+function paramsFromConfig(config: GrokRuntimeConfig): Pick<
+  GrokChatParams,
+  "temperature" | "maxTokens" | "reasoningEffort"
+> {
   return {
     temperature: config.temperature,
     maxTokens: config.maxTokens,
@@ -105,8 +98,7 @@ export async function grokChatFromConfig(options: {
     throw new Error("GROK_API_KEY fehlt in .env.local");
   }
 
-  const profile = options.profile ?? "article";
-  const profileParams = paramsForProfile(config, profile);
+  const profileParams = paramsFromConfig(config);
 
   return grokChat({
     apiKey: config.apiKey,

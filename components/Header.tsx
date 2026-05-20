@@ -17,8 +17,8 @@ const STATUS_PILL: Record<
   reading:   { label: "Dokument wird gelesen …",     state: "working" },
   checking:  { label: "Lesbarkeit wird geprüft …",   state: "working" },
   readable:  { label: "Dokument lesbar",              state: "done" },
-  analyzing: { label: "KI formuliert Antwort …",     state: "working" },
-  done:      { label: "Antwortbrief bereit",          state: "done" },
+  analyzing: { label: "Schreiben wird analysiert …",  state: "working" },
+  done:      { label: "Analyse abgeschlossen",        state: "done" },
   error:     { label: "Fehler",                       state: "error" },
 };
 

@@ -22,7 +22,7 @@ export const CHECK_ITEMS: CheckItem[] = [
   { key: "read",  label: "Dokument wird gelesen …",                  doneLabel: "Dokument gelesen" },
   { key: "ocr",   label: "Lesbarkeit & Bildqualität wird geprüft …", doneLabel: "Lesbarkeit: gut" },
   { key: "parse", label: "Absender, Aktenzeichen, Datum extrahieren", doneLabel: "Absender & Aktenzeichen erkannt" },
-  { key: "legal", label: "Abgleich Genfer Abkommen IV …",             doneLabel: "GA-IV-Analyse abgeschlossen" },
+  { key: "legal", label: "Schreiben wird analysiert …",              doneLabel: "GA-IV-Analyse abgeschlossen" },
 ];
 
 export type CheckStates = Record<string, CheckState>;
@@ -193,7 +193,7 @@ export function useDocumentWorkflow() {
     setStatus("readable");
   }, [queuedFiles, setCheck]);
 
-  const generateLetter = useCallback(async () => {
+  const analyzeSchreiben = useCallback(async () => {
     if (!extractedText && status !== "readable") {
       return;
     }
@@ -248,7 +248,7 @@ export function useDocumentWorkflow() {
     addFiles,
     removeFile,
     startDocumentCheck,
-    generateLetter,
+    analyzeSchreiben,
     reset,
   };
 }

@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ActionBar } from "@/components/ActionBar";
 import { AnalysisResult } from "@/components/AnalysisResult";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { FileUpload } from "@/components/FileUpload";
 import { AppHeader } from "@/components/AppHeader";
-import { LetterPreview } from "@/components/LetterPreview";
 import { ProcessingOverlay } from "@/components/ProcessingOverlay";
 import { ProcessingPanel } from "@/components/ProcessingPanel";
 import { useDocumentWorkflow, CHECK_ITEMS } from "@/hooks/useDocumentWorkflow";
@@ -34,17 +32,17 @@ export default function HomePage() {
     addFiles,
     removeFile,
     startDocumentCheck,
-    generateLetter,
+    analyzeSchreiben,
     reset,
   } = useDocumentWorkflow();
 
-  const letterRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
   const analyzingMsg = getProcessingMessage(status);
   const [debugEnabled, setDebugEnabled] = useState(false);
 
   useEffect(() => {
-    if (status === "done" && letterRef.current) {
-      letterRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (status === "done" && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [status]);
 
@@ -62,8 +60,8 @@ export default function HomePage() {
     else if (key === "read" && status === "reading") on = "1";
     else if (key === "extract" && status === "readable") on = "done";
     else if (key === "extract" && ["checking"].includes(status)) on = "1";
-    else if (key === "letter" && status === "done") on = "done";
-    else if (key === "letter" && status === "analyzing") on = "1";
+    else if (key === "analyze" && status === "done") on = "done";
+    else if (key === "analyze" && status === "analyzing") on = "1";
 
     return (
       <div className="rail-step" key={key} data-on={on}>
@@ -89,19 +87,18 @@ export default function HomePage() {
           Stand <span id="now">{getNow()}</span>
         </div>
 
-        <h1 className="page-title">Dokument prüfen &amp; Antwort entwerfen.</h1>
+        <h1 className="page-title">Dokument prüfen nach GA IV.</h1>
         <p className="page-lede">
           Laden Sie ein oder mehrere Schreiben hoch (PDF, DOCX, Bilder).
-          Mit „Dokument prüfen“ starten Sie die Lesbarkeitsprüfung; Absender und Aktenzeichen werden erkannt —
-          anschließend erstellt die KI einen formellen Antwortbrief unter Bezugnahme
-          auf die <b>IV. Genfer Konvention</b>.
+          Mit „Dokument prüfen“ starten Sie die Lesbarkeitsprüfung; mit „Schreiben analysieren“
+          prüft die KI das Schreiben ausschließlich anhand des <b>IV. Genfer Abkommens</b>.
         </p>
 
         <div className="rail">
           {railStep("upload",  "Dokument hochladen",  1)}
           {railStep("read",    "Lesbarkeit prüfen",   2)}
           {railStep("extract", "Daten erfassen",      3)}
-          {railStep("letter",  "Antwort generieren",  4)}
+          {railStep("analyze", "Schreiben analysieren", 4)}
         </div>
 
         <div className="grid">
@@ -110,7 +107,7 @@ export default function HomePage() {
             onFilesAdded={addFiles}
             onRemoveFile={removeFile}
             onStartCheck={() => void startDocumentCheck()}
-            onGenerate={() => void generateLetter()}
+            onAnalyze={() => void analyzeSchreiben()}
             onReset={reset}
             disabled={isProcessing}
             status={status}
@@ -120,6 +117,7 @@ export default function HomePage() {
             errorMessage={errorMessage}
           />
 
+          <div ref={resultRef}>
           {result ? (
             <AnalysisResult
               analysis={result.analysis}
@@ -149,19 +147,8 @@ export default function HomePage() {
               </div>
             </aside>
           )}
-        </div>
-
-        {result && (
-          <div ref={letterRef}>
-            <LetterPreview
-              letter={result.letter}
-              mock={result.metadata.mock}
-              actions={
-                <ActionBar letterText={result.letter} onReset={reset} />
-              }
-            />
           </div>
-        )}
+        </div>
 
         {debugEnabled && result?.metadata.diagnostics && (
           <DiagnosticsPanel

@@ -21,8 +21,8 @@ export function getProcessingMessage(
       };
     case "analyzing":
       return {
-        title: "Antwortbrief wird formuliert …",
-        hint: "GA-IV-Analyse und Brieftext – kann etwas dauern",
+        title: "Schreiben wird analysiert …",
+        hint: "GA-IV-Prüfung – kann etwas dauern",
       };
     default:
       return null;

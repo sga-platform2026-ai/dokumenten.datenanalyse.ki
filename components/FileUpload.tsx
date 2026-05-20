@@ -12,7 +12,7 @@ interface FileUploadProps {
   onFilesAdded: (files: FileList | File[]) => void;
   onRemoveFile: (id: string) => void;
   onStartCheck: () => void;
-  onGenerate: () => void;
+  onAnalyze: () => void;
   onReset: () => void;
   disabled: boolean;
   status: ProcessingStatus;
@@ -27,7 +27,7 @@ export function FileUpload({
   onFilesAdded,
   onRemoveFile,
   onStartCheck,
-  onGenerate,
+  onAnalyze,
   onReset,
   disabled,
   status,
@@ -53,9 +53,9 @@ export function FileUpload({
     "done",
   ].includes(status);
   const showCheckBtn = status === "selected" && hasFiles;
-  const showGenBtn = status === "readable";
+  const showAnalyzeBtn = status === "readable";
   const showResetBtn = hasFiles || status !== "idle";
-  const isGenerating = status === "analyzing";
+  const isAnalyzing = status === "analyzing";
   const uploadBusy = status === "reading" || status === "checking";
   const processingMsg = getProcessingMessage(status);
   const pickDisabled = disabled || !canPickFiles;
@@ -285,25 +285,25 @@ export function FileUpload({
               </svg>
             </button>
           )}
-          {showGenBtn && (
+          {showAnalyzeBtn && (
             <button
               type="button"
               className="btn btn-primary"
-              onClick={onGenerate}
-              disabled={isGenerating}
+              onClick={onAnalyze}
+              disabled={isAnalyzing}
             >
-              {isGenerating ? (
+              {isAnalyzing ? (
                 <>
                   <Spinner
                     size="sm"
                     tone="inverse"
-                    label="Brief wird formuliert"
+                    label="Schreiben wird analysiert"
                   />
-                  Brief wird formuliert …
+                  Schreiben wird analysiert …
                 </>
               ) : (
                 <>
-                  <span>Antwortbrief generieren</span>
+                  <span>Schreiben analysieren</span>
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
