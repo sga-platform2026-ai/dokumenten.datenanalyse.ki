@@ -1,8 +1,12 @@
+import { getAuthConfigStatus } from "@/lib/auth/config";
 import { NextResponse } from "next/server";
-import { isAuthEnabled } from "@/lib/auth/config";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<NextResponse> {
-  return NextResponse.json({ enabled: isAuthEnabled() });
+  const status = getAuthConfigStatus();
+  return NextResponse.json({
+    enabled: status.enabled,
+    reason: status.reason ?? null,
+  });
 }

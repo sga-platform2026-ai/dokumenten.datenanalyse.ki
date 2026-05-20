@@ -1,6 +1,6 @@
 import { LoginForm } from "@/components/LoginForm";
-import { isAuthEnabled } from "@/lib/auth/config";
-import { redirect } from "next/navigation";
+import { LoginUnavailable } from "@/components/LoginUnavailable";
+import { getAuthConfigStatus } from "@/lib/auth/config";
 import { Suspense } from "react";
 
 export const metadata = {
@@ -8,9 +8,7 @@ export const metadata = {
 };
 
 export default function LoginPage() {
-  if (!isAuthEnabled()) {
-    redirect("/");
-  }
+  const authStatus = getAuthConfigStatus();
 
   return (
     <div className="login-page">
@@ -43,11 +41,17 @@ export default function LoginPage() {
           </p>
           <h1 className="serif login-title">Anmelden</h1>
           <p className="login-lede">
-            Bitte melden Sie sich an, um die Dokumentenprüfung zu nutzen.
+            {authStatus.enabled
+              ? "Bitte melden Sie sich an, um die Dokumentenprüfung zu nutzen."
+              : "Anmeldung derzeit nicht verfügbar."}
           </p>
-          <Suspense fallback={<p className="login-lede">Formular wird geladen …</p>}>
-            <LoginForm />
-          </Suspense>
+          {authStatus.enabled ? (
+            <Suspense fallback={<p className="login-lede">Formular wird geladen …</p>}>
+              <LoginForm />
+            </Suspense>
+          ) : (
+            <LoginUnavailable reason={authStatus.reason ?? "not_configured"} />
+          )}
         </div>
       </main>
     </div>
