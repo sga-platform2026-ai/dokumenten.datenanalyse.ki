@@ -5,6 +5,12 @@ import { combineDocumentTexts, formatFileNamesLabel } from "@/lib/combineDocumen
 import { extractDocumentText, validateFileType } from "@/lib/documentExtraction";
 import { formatExtractionErrorMessage } from "@/lib/extractionErrors";
 import {
+  animateProgress,
+  analyzeCreepIntervalMs,
+  progressForRead,
+  WORKFLOW_PROGRESS,
+} from "@/lib/workflowProgress";
+import {
   fileExtensionLabel,
   formatFileSizeLabel,
   MAX_FILE_BYTES,
@@ -146,12 +152,10 @@ export function useDocumentWorkflow() {
 
     for (let index = 0; index < total; index += 1) {
       const { file, name } = queuedFiles[index];
-      const baseProgress = 10 + Math.round((index / total) * 15);
-      const span = Math.max(1, Math.round(15 / total));
 
       const extraction = await extractDocumentText(file, {
         onOcrProgress: (fraction) => {
-          setProgress(baseProgress + Math.round(fraction * span));
+          setProgress(progressForRead(index, total, fraction));
         },
       });
 
@@ -163,34 +167,44 @@ export function useDocumentWorkflow() {
       }
 
       extractedParts.push({ fileName: name, text: extraction.text });
-      setProgress(10 + Math.round(((index + 1) / total) * 15));
+      setProgress(progressForRead(index + 1, total, 0));
     }
 
     await delay(400);
     setCheck("read", "done");
-    setProgress(25);
+    setProgress(WORKFLOW_PROGRESS.readEnd);
 
     setStatus("checking");
     setCheck("ocr", "active");
-    await delay(500 + Math.random() * 300);
+    await animateProgress(
+      setProgress,
+      WORKFLOW_PROGRESS.readEnd,
+      WORKFLOW_PROGRESS.ocrEnd,
+      600,
+    );
     setCheck("ocr", "done");
-    setProgress(50);
 
     setCheck("parse", "active");
-    await delay(500 + Math.random() * 300);
+    await animateProgress(
+      setProgress,
+      WORKFLOW_PROGRESS.ocrEnd,
+      WORKFLOW_PROGRESS.parseEnd,
+      600,
+    );
     setCheck("parse", "done");
-    setProgress(85);
 
     const combinedText = combineDocumentTexts(extractedParts);
     setExtractedText(combinedText);
 
     setCheck("legal", "active");
     setStatus("analyzing");
-    setProgress(86);
+    setProgress(WORKFLOW_PROGRESS.analyzeStart);
 
     const progressTimer = window.setInterval(() => {
-      setProgress((current) => (current >= 94 ? current : current + 1));
-    }, 10_000);
+      setProgress((current) =>
+        current >= WORKFLOW_PROGRESS.analyzeMax ? current : current + 1,
+      );
+    }, analyzeCreepIntervalMs());
 
     try {
       const response = await fetch("/api/analyze", {
@@ -209,7 +223,7 @@ export function useDocumentWorkflow() {
 
       const data = (await response.json()) as AnalyzeResponse;
       setCheck("legal", "done");
-      setProgress(100);
+      setProgress(WORKFLOW_PROGRESS.done);
       setResult(data);
       setStatus("done");
     } catch (error) {
