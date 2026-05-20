@@ -6,6 +6,9 @@ export function createMockAnalyzeResponse(fileName?: string): AnalyzeResponse {
 
   const rawAnalysis = `1. Absender-Identifikation
 
+Empfänger:
+Herr Max Empfänger, Beispielweg 5, 80331 München, empfaenger@example.com, +49 (89) 1234-5678
+
 Behörde / Institution:
 Stadtverwaltung Musterstadt, Amtsstraße 12, 12345 Musterstadt
 

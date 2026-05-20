@@ -3,7 +3,12 @@ import {
   extractTextWithTesseract,
   type OcrProgressHandler,
 } from "@/lib/imageOcr";
-import type { ExtractionResult, SupportedMime } from "@/types";
+import { openPdfDocument, type PdfDocumentProxy } from "@/lib/pdfJsClient";
+import type {
+  ExtractionErrorCode,
+  ExtractionResult,
+  SupportedMime,
+} from "@/types";
 
 export const MIN_READABLE_CHARS = 80;
 
@@ -51,16 +56,34 @@ export function validateFileType(file: File): SupportedMime | null {
 function buildResult(
   text: string,
   method: ExtractionResult["method"],
+  errorCode?: ExtractionErrorCode,
 ): ExtractionResult {
   const normalized = text.replace(/\s+/g, " ").trim();
   const charCount = normalized.length;
+  const readable = charCount >= MIN_READABLE_CHARS && !errorCode;
 
   return {
     text: normalized,
     charCount,
     method,
-    readable: charCount >= MIN_READABLE_CHARS,
+    readable,
+    errorCode: readable
+      ? undefined
+      : (errorCode ?? (charCount < MIN_READABLE_CHARS ? inferEmptyError(method) : undefined)),
   };
+}
+
+function inferEmptyError(method: ExtractionResult["method"]): ExtractionErrorCode {
+  switch (method) {
+    case "pdf":
+      return "pdf_empty";
+    case "docx":
+      return "docx_parse_failed";
+    case "ocr":
+      return "ocr_failed";
+    default:
+      return "unsupported_type";
+  }
 }
 
 function methodForMime(mime: SupportedMime): ExtractionResult["method"] {
@@ -78,23 +101,7 @@ function methodForMime(mime: SupportedMime): ExtractionResult["method"] {
   return "unsupported";
 }
 
-async function loadPdfJs(): Promise<typeof import("pdfjs-dist")> {
-  const pdfjs = await import("pdfjs-dist");
-
-  if (typeof window !== "undefined") {
-    pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-      "pdfjs-dist/build/pdf.worker.min.mjs",
-      import.meta.url,
-    ).toString();
-  }
-
-  return pdfjs;
-}
-
-async function extractPdfTextLayer(file: File): Promise<string> {
-  const pdfjs = await loadPdfJs();
-  const buffer = await file.arrayBuffer();
-  const pdf = await pdfjs.getDocument({ data: buffer }).promise;
+async function extractTextFromPdfDocument(pdf: PdfDocumentProxy): Promise<string> {
   const pages: string[] = [];
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
@@ -110,15 +117,12 @@ async function extractPdfTextLayer(file: File): Promise<string> {
 }
 
 async function renderPdfPagesToCanvases(
-  file: File,
+  pdf: PdfDocumentProxy,
 ): Promise<HTMLCanvasElement[]> {
   if (typeof window === "undefined") {
     return [];
   }
 
-  const pdfjs = await loadPdfJs();
-  const buffer = await file.arrayBuffer();
-  const pdf = await pdfjs.getDocument({ data: buffer }).promise;
   const canvases: HTMLCanvasElement[] = [];
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
@@ -141,20 +145,39 @@ async function renderPdfPagesToCanvases(
 async function extractPdfTextWithOcrFallback(
   file: File,
   onProgress?: OcrProgressHandler,
-): Promise<{ text: string; usedOcr: boolean }> {
-  const layerText = await extractPdfTextLayer(file);
+): Promise<{ text: string; usedOcr: boolean; errorCode?: ExtractionErrorCode }> {
+  let pdf: PdfDocumentProxy;
+
+  try {
+    const buffer = await file.arrayBuffer();
+    pdf = await openPdfDocument(buffer);
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[documentExtraction] PDF open failed", error);
+    }
+    return { text: "", usedOcr: false, errorCode: "pdf_parse_failed" };
+  }
+
+  const layerText = await extractTextFromPdfDocument(pdf);
   const normalized = layerText.replace(/\s+/g, " ").trim();
   if (normalized.length >= MIN_READABLE_CHARS) {
     return { text: layerText, usedOcr: false };
   }
 
-  const canvases = await renderPdfPagesToCanvases(file);
+  const canvases = await renderPdfPagesToCanvases(pdf);
   if (canvases.length === 0) {
     return { text: layerText, usedOcr: false };
   }
 
-  const ocrPages = await extractTextFromCanvases(canvases, onProgress);
-  return { text: ocrPages.join("\n\n"), usedOcr: true };
+  try {
+    const ocrPages = await extractTextFromCanvases(canvases, onProgress);
+    return { text: ocrPages.join("\n\n"), usedOcr: true };
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[documentExtraction] PDF OCR fallback failed", error);
+    }
+    return { text: layerText, usedOcr: true, errorCode: "ocr_failed" };
+  }
 }
 
 export interface ExtractDocumentOptions {
@@ -168,7 +191,7 @@ export async function extractDocumentText(
   const mime = validateFileType(file);
 
   if (!mime) {
-    return buildResult("", "unsupported");
+    return buildResult("", "unsupported", "unsupported_type");
   }
 
   const fallbackMethod = methodForMime(mime);
@@ -176,11 +199,11 @@ export async function extractDocumentText(
   try {
     switch (mime) {
       case "application/pdf": {
-        const { text, usedOcr } = await extractPdfTextWithOcrFallback(
+        const { text, usedOcr, errorCode } = await extractPdfTextWithOcrFallback(
           file,
           options?.onOcrProgress,
         );
-        return buildResult(text, usedOcr ? "ocr" : "pdf");
+        return buildResult(text, usedOcr ? "ocr" : "pdf", errorCode);
       }
       case "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
         const text = await extractDocxText(file);
@@ -196,10 +219,28 @@ export async function extractDocumentText(
         return buildResult(text, "ocr");
       }
       default:
-        return buildResult("", "unsupported");
+        return buildResult("", "unsupported", "unsupported_type");
     }
-  } catch {
-    return buildResult("", fallbackMethod);
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[documentExtraction] extraction failed", error);
+    }
+    return buildResult("", fallbackMethod, mapMethodToParseError(fallbackMethod));
+  }
+}
+
+function mapMethodToParseError(
+  method: ExtractionResult["method"],
+): ExtractionErrorCode {
+  switch (method) {
+    case "pdf":
+      return "pdf_parse_failed";
+    case "docx":
+      return "docx_parse_failed";
+    case "ocr":
+      return "ocr_failed";
+    default:
+      return "unsupported_type";
   }
 }
 

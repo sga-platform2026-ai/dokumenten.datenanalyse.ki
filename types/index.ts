@@ -25,11 +25,19 @@ export type SupportedMime =
 
 export type ExtractionMethod = "pdf" | "docx" | "ocr" | "unsupported";
 
+export type ExtractionErrorCode =
+  | "unsupported_type"
+  | "pdf_parse_failed"
+  | "pdf_empty"
+  | "docx_parse_failed"
+  | "ocr_failed";
+
 export interface ExtractionResult {
   text: string;
   readable: boolean;
   method: ExtractionMethod;
   charCount: number;
+  errorCode?: ExtractionErrorCode;
 }
 
 export interface AnalyzeRequest {
@@ -70,6 +78,7 @@ export interface AnalyzeResponse {
 }
 
 export interface ParsedAnalysis {
+  recipient?: string;
   authority?: string;
   clerk?: string;
   leader?: string;

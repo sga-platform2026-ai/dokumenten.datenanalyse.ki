@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { combineDocumentTexts, formatFileNamesLabel } from "@/lib/combineDocumentText";
 import { extractDocumentText, validateFileType } from "@/lib/documentExtraction";
+import { formatExtractionErrorMessage } from "@/lib/extractionErrors";
 import {
   fileExtensionLabel,
   formatFileSizeLabel,
@@ -47,9 +48,7 @@ export function useDocumentWorkflow() {
   const [progress, setProgress] = useState(0);
   const [extractedText, setExtractedText] = useState<string>("");
 
-  const isProcessing = ["reading", "checking", "readable", "analyzing"].includes(
-    status,
-  );
+  const isProcessing = ["reading", "checking", "analyzing"].includes(status);
 
   const setCheck = useCallback((key: string, state: CheckState) => {
     setCheckStates((prev) => ({ ...prev, [key]: state }));
@@ -159,9 +158,7 @@ export function useDocumentWorkflow() {
       if (!extraction.readable) {
         setCheck("read", "error");
         setStatus("error");
-        setErrorMessage(
-          `"${name}" ist nicht ausreichend lesbar – bitte bessere Datei hochladen oder entfernen.`,
-        );
+        setErrorMessage(formatExtractionErrorMessage(name, extraction));
         return;
       }
 
@@ -182,30 +179,21 @@ export function useDocumentWorkflow() {
     setCheck("parse", "active");
     await delay(500 + Math.random() * 300);
     setCheck("parse", "done");
-    setProgress(75);
+    setProgress(85);
+
+    const combinedText = combineDocumentTexts(extractedParts);
+    setExtractedText(combinedText);
 
     setCheck("legal", "active");
-    await delay(400 + Math.random() * 300);
-    setCheck("legal", "done");
-    setProgress(100);
-
-    setExtractedText(combineDocumentTexts(extractedParts));
-    setStatus("readable");
-  }, [queuedFiles, setCheck]);
-
-  const analyzeSchreiben = useCallback(async () => {
-    if (!extractedText && status !== "readable") {
-      return;
-    }
-
     setStatus("analyzing");
+
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          documentText: extractedText,
-          fileName: fileName ?? undefined,
+          documentText: combinedText,
+          fileName: formatFileNamesLabel(queuedFiles.map((f) => f.name)),
         }),
       });
 
@@ -215,15 +203,18 @@ export function useDocumentWorkflow() {
       }
 
       const data = (await response.json()) as AnalyzeResponse;
+      setCheck("legal", "done");
+      setProgress(100);
       setResult(data);
       setStatus("done");
     } catch (error) {
+      setCheck("legal", "error");
       setStatus("error");
       setErrorMessage(
         error instanceof Error ? error.message : "Analyse fehlgeschlagen.",
       );
     }
-  }, [extractedText, fileName, status]);
+  }, [queuedFiles, setCheck]);
 
   const reset = useCallback(() => {
     setStatus("idle");
@@ -248,7 +239,6 @@ export function useDocumentWorkflow() {
     addFiles,
     removeFile,
     startDocumentCheck,
-    analyzeSchreiben,
     reset,
   };
 }

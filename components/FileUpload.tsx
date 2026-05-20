@@ -12,7 +12,6 @@ interface FileUploadProps {
   onFilesAdded: (files: FileList | File[]) => void;
   onRemoveFile: (id: string) => void;
   onStartCheck: () => void;
-  onAnalyze: () => void;
   onReset: () => void;
   disabled: boolean;
   status: ProcessingStatus;
@@ -27,7 +26,6 @@ export function FileUpload({
   onFilesAdded,
   onRemoveFile,
   onStartCheck,
-  onAnalyze,
   onReset,
   disabled,
   status,
@@ -45,17 +43,11 @@ export function FileUpload({
   const hasFiles = queuedFiles.length > 0;
   const showMainDrop = canPickFiles && !hasFiles;
   const showAddMore = canPickFiles && hasFiles;
-  const showChecklist = [
-    "reading",
-    "checking",
-    "readable",
-    "analyzing",
-    "done",
-  ].includes(status);
+  const showChecklist = ["reading", "checking", "analyzing", "done"].includes(
+    status,
+  );
   const showCheckBtn = status === "selected" && hasFiles;
-  const showAnalyzeBtn = status === "readable";
   const showResetBtn = hasFiles || status !== "idle";
-  const isAnalyzing = status === "analyzing";
   const uploadBusy = status === "reading" || status === "checking";
   const processingMsg = getProcessingMessage(status);
   const pickDisabled = disabled || !canPickFiles;
@@ -283,37 +275,6 @@ export function FileUpload({
               >
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
-            </button>
-          )}
-          {showAnalyzeBtn && (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={onAnalyze}
-              disabled={isAnalyzing}
-            >
-              {isAnalyzing ? (
-                <>
-                  <Spinner
-                    size="sm"
-                    tone="inverse"
-                    label="Schreiben wird analysiert"
-                  />
-                  Schreiben wird analysiert …
-                </>
-              ) : (
-                <>
-                  <span>Schreiben analysieren</span>
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M5 12h14M13 6l6 6-6 6" />
-                  </svg>
-                </>
-              )}
             </button>
           )}
         </div>

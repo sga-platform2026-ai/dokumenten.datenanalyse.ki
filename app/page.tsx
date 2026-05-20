@@ -32,7 +32,6 @@ export default function HomePage() {
     addFiles,
     removeFile,
     startDocumentCheck,
-    analyzeSchreiben,
     reset,
   } = useDocumentWorkflow();
 
@@ -54,12 +53,12 @@ export default function HomePage() {
 
   const railStep = (key: string, label: string, n: number) => {
     let on: string | undefined;
-    if (key === "upload" && ["selected","reading","checking","readable","analyzing","done"].includes(status)) on = "done";
-    else if (key === "upload" && (status === "idle" || status === "selected")) on = queuedFiles.length > 0 ? "done" : "1";
-    else if (key === "read" && ["checking","readable"].includes(status)) on = "done";
+    if (key === "upload" && ["selected","reading","checking","analyzing","done"].includes(status)) on = "done";
+    else if (key === "upload" && status === "idle") on = queuedFiles.length > 0 ? "done" : "1";
+    else if (key === "read" && ["checking","analyzing","done"].includes(status)) on = "done";
     else if (key === "read" && status === "reading") on = "1";
-    else if (key === "extract" && status === "readable") on = "done";
-    else if (key === "extract" && ["checking"].includes(status)) on = "1";
+    else if (key === "extract" && ["analyzing","done"].includes(status)) on = "done";
+    else if (key === "extract" && status === "checking") on = "1";
     else if (key === "analyze" && status === "done") on = "done";
     else if (key === "analyze" && status === "analyzing") on = "1";
 
@@ -90,8 +89,8 @@ export default function HomePage() {
         <h1 className="page-title">Dokument prüfen nach GA IV.</h1>
         <p className="page-lede">
           Laden Sie ein oder mehrere Schreiben hoch (PDF, DOCX, Bilder).
-          Mit „Dokument prüfen“ starten Sie die Lesbarkeitsprüfung; mit „Schreiben analysieren“
-          prüft die KI das Schreiben ausschließlich anhand des <b>IV. Genfer Abkommens</b>.
+          Mit „Dokument prüfen“ starten Sie Lesbarkeitsprüfung und GA-IV-Analyse
+          automatisch anhand des <b>IV. Genfer Abkommens</b>.
         </p>
 
         <div className="rail">
@@ -107,7 +106,6 @@ export default function HomePage() {
             onFilesAdded={addFiles}
             onRemoveFile={removeFile}
             onStartCheck={() => void startDocumentCheck()}
-            onAnalyze={() => void analyzeSchreiben()}
             onReset={reset}
             disabled={isProcessing}
             status={status}

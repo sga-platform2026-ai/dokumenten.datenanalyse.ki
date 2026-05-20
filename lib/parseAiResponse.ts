@@ -33,6 +33,9 @@ export function parseAnalysisSections(analysis: string): ParsedAnalysis {
   const { displayAnalysis, articles: normalized, affected } =
     applyNormalizedArticlesToAnalysis(analysis);
   const raw = displayAnalysis.trim();
+  const recipientMatch = raw.match(
+    /Empfänger:\s*([\s\S]*?)(?=\nBehörde\s*\/\s*Institution:|$)/i,
+  );
   const authorityMatch = raw.match(
     /Behörde\s*\/\s*Institution:\s*([\s\S]*?)(?=\nVerantwortlicher|$)/i,
   );
@@ -54,6 +57,7 @@ export function parseAnalysisSections(analysis: string): ParsedAnalysis {
   }));
 
   return {
+    recipient: recipientMatch?.[1]?.trim(),
     authority: authorityMatch?.[1]?.trim(),
     clerk: clerkMatch?.[1]?.trim(),
     leader: leaderMatch?.[1]?.trim(),

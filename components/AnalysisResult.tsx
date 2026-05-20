@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ContactValue } from "@/components/ContactValue";
 import { parseAnalysisSections } from "@/lib/parseAiResponse";
 
 interface AnalysisResultProps {
@@ -31,6 +32,15 @@ export function AnalysisResult({ analysis, fileName, mock }: AnalysisResultProps
             <dt>Datei</dt>
             <dd style={{ fontWeight: 400, fontSize: 13, color: "var(--ink-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {fileName}
+            </dd>
+          </>
+        )}
+
+        {parsed.recipient && (
+          <>
+            <dt>Empfänger</dt>
+            <dd style={{ fontWeight: 400, fontSize: 13, color: "var(--ink-2)" }}>
+              <ContactValue text={parsed.recipient} />
             </dd>
           </>
         )}
