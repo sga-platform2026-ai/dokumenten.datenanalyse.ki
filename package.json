@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:grok": "node scripts/test-grok-key.mjs",
-    "test:articles": "tsx --test lib/structuredArticles.test.ts"
+    "test:grok": "tsx scripts/test-grok-key.ts",
+    "test:articles": "tsx --test lib/structuredArticles.test.ts",
+    "gen:knowledge-md": "tsx scripts/gen-ga-iv-wissensdatenbank-md.ts"
   },
   "dependencies": {
     "jspdf": "^4.2.1",

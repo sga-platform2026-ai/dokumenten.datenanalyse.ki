@@ -1,5 +1,8 @@
-const DEFAULT_GROK_URL = "https://api.x.ai/v1/chat/completions";
-const DEFAULT_MAX_TOKENS = 8192;
+import {
+  getGrokRuntimeConfig,
+  type GrokReasoningEffort,
+  type GrokRuntimeConfig,
+} from "@/lib/grokConfig";
 
 interface GrokChoice {
   message?: {
@@ -11,43 +14,66 @@ interface GrokApiResponse {
   choices?: GrokChoice[];
 }
 
+interface GrokChatRequestBody {
+  model: string;
+  messages: Array<{ role: "system" | "user"; content: string }>;
+  temperature: number;
+  max_tokens: number;
+  reasoning_effort?: GrokReasoningEffort;
+}
+
+export type GrokCallProfile = "article" | "letter";
+
 export interface GrokChatParams {
   apiKey: string;
-  apiUrl?: string;
+  apiUrl: string;
   model: string;
   system: string;
   user: string;
   temperature: number;
-  maxTokens?: number;
+  maxTokens: number;
+  reasoningEffort: GrokReasoningEffort;
   signal?: AbortSignal;
 }
 
-export async function grokChat({
-  apiKey,
-  apiUrl = DEFAULT_GROK_URL,
-  model,
-  system,
-  user,
-  temperature,
-  maxTokens = DEFAULT_MAX_TOKENS,
-  signal,
-}: GrokChatParams): Promise<string> {
-  const response = await fetch(apiUrl, {
+function paramsForProfile(
+  config: GrokRuntimeConfig,
+  profile: GrokCallProfile,
+): Pick<GrokChatParams, "temperature" | "maxTokens" | "reasoningEffort"> {
+  if (profile === "letter") {
+    return {
+      temperature: config.letterTemperature,
+      maxTokens: config.letterMaxTokens,
+      reasoningEffort: config.letterReasoningEffort,
+    };
+  }
+  return {
+    temperature: config.temperature,
+    maxTokens: config.maxTokens,
+    reasoningEffort: config.reasoningEffort,
+  };
+}
+
+export async function grokChat(params: GrokChatParams): Promise<string> {
+  const body: GrokChatRequestBody = {
+    model: params.model,
+    messages: [
+      { role: "system", content: params.system },
+      { role: "user", content: params.user },
+    ],
+    temperature: params.temperature,
+    max_tokens: params.maxTokens,
+    reasoning_effort: params.reasoningEffort,
+  };
+
+  const response = await fetch(params.apiUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${params.apiKey}`,
     },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-      temperature,
-      max_tokens: maxTokens,
-    }),
-    signal,
+    body: JSON.stringify(body),
+    signal: params.signal,
   });
 
   if (!response.ok) {
@@ -65,4 +91,32 @@ export async function grokChat({
   }
 
   return content;
+}
+
+/** Grok-Aufruf mit Einstellungen aus `config/Grok-Konfiguration.md` + API-Key aus Env. */
+export async function grokChatFromConfig(options: {
+  system: string;
+  user: string;
+  profile?: GrokCallProfile;
+  signal?: AbortSignal;
+}): Promise<string> {
+  const config = getGrokRuntimeConfig();
+  if (!config.apiKey) {
+    throw new Error("GROK_API_KEY fehlt in .env.local");
+  }
+
+  const profile = options.profile ?? "article";
+  const profileParams = paramsForProfile(config, profile);
+
+  return grokChat({
+    apiKey: config.apiKey,
+    apiUrl: config.apiUrl,
+    model: config.model,
+    system: options.system,
+    user: options.user,
+    temperature: profileParams.temperature,
+    maxTokens: profileParams.maxTokens,
+    reasoningEffort: profileParams.reasoningEffort,
+    signal: options.signal,
+  });
 }
