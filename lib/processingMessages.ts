@@ -22,7 +22,7 @@ export function getProcessingMessage(
     case "analyzing":
       return {
         title: "Schreiben wird analysiert …",
-        hint: "GA-IV-Prüfung – kann etwas dauern",
+        hint: "Je nach Umfang des Dokuments kann die GA-IV-Analyse 1–2 Minuten dauern. Bitte das Fenster geöffnet lassen.",
       };
     default:
       return null;

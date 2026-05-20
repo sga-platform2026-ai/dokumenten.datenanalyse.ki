@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { ProcessingPanel } from "@/components/ProcessingPanel";
+import { ProgressBar } from "@/components/ProgressBar";
 import { Spinner } from "@/components/Spinner";
 import type { CheckStates, CheckItem } from "@/hooks/useDocumentWorkflow";
 import { getProcessingMessage } from "@/lib/processingMessages";
@@ -203,10 +204,11 @@ export function FileUpload({
         </div>
       )}
 
-      {uploadBusy && processingMsg && (
+      {((uploadBusy || status === "analyzing") && processingMsg) && (
         <ProcessingPanel
           title={processingMsg.title}
           hint={processingMsg.hint}
+          progress={progress}
         />
       )}
 
@@ -248,9 +250,7 @@ export function FileUpload({
               );
             })}
           </div>
-          <div className="progress-bar">
-            <div style={{ width: `${progress}%` }} />
-          </div>
+          <ProgressBar value={progress} />
         </div>
       )}
 

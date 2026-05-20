@@ -186,6 +186,11 @@ export function useDocumentWorkflow() {
 
     setCheck("legal", "active");
     setStatus("analyzing");
+    setProgress(86);
+
+    const progressTimer = window.setInterval(() => {
+      setProgress((current) => (current >= 94 ? current : current + 1));
+    }, 10_000);
 
     try {
       const response = await fetch("/api/analyze", {
@@ -213,6 +218,8 @@ export function useDocumentWorkflow() {
       setErrorMessage(
         error instanceof Error ? error.message : "Analyse fehlgeschlagen.",
       );
+    } finally {
+      window.clearInterval(progressTimer);
     }
   }, [queuedFiles, setCheck]);
 

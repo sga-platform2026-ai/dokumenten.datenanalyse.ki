@@ -91,6 +91,7 @@ export default function HomePage() {
           Laden Sie ein oder mehrere Schreiben hoch (PDF, DOCX, Bilder).
           Mit „Dokument prüfen“ starten Sie Lesbarkeitsprüfung und GA-IV-Analyse
           automatisch anhand des <b>IV. Genfer Abkommens</b>.
+          Die KI-Analyse kann je nach Dokument etwa 1–2 Minuten dauern.
         </p>
 
         <div className="rail">
@@ -130,6 +131,7 @@ export default function HomePage() {
                 title={analyzingMsg.title}
                 hint={analyzingMsg.hint}
                 compact
+                progress={progress}
               />
             </aside>
           ) : (
@@ -160,6 +162,7 @@ export default function HomePage() {
         <ProcessingOverlay
           title={analyzingMsg.title}
           hint={analyzingMsg.hint}
+          progress={progress}
         />
       )}
 
