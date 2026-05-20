@@ -19,7 +19,7 @@ npm install
 ## Lokale Entwicklung
 
 1. Umgebungsdatei anlegen (siehe Abschnitt **Umgebungsdateien – Benennung**)
-2. Optional `GROK_API_KEY` in `.env.local` eintragen (ohne Key: Mock-Analyse)
+2. Optional `GROK_API_KEY` in `.env.local` eintragen (KI-Analyse erst nach Konfiguration der Prompts)
 3. Dev-Server starten:
 
 ```bash
@@ -57,7 +57,7 @@ Die Datei **`.env.local`** ist bereits im Projekt vorhanden; tragen Sie dort Ihr
 
 | Variable | Pflicht | Beschreibung |
 |----------|---------|--------------|
-| `GROK_API_KEY` | Nein (ja für Live-KI) | API-Key von [console.x.ai](https://console.x.ai/). Ohne Key: Mock-Daten. |
+| `GROK_API_KEY` | Nein (ja für Live-KI) | API-Key von [console.x.ai](https://console.x.ai/). Analyse nur mit konfigurierten Prompts. |
 | `GROK_API_URL` | Nein | Standard: `https://api.x.ai/v1/chat/completions` |
 | `GROK_MODEL` | Nein | Standard: `grok-3-latest` |
 | `AUTH_USERNAME` | Nein (ja für Login) | Benutzername für den Zugangsschutz |
@@ -97,13 +97,11 @@ Schlecht lesbare Scans liefern die Meldung: *„Dokument nicht ausreichend lesba
 
 ## KI-Analyse / Prompts
 
-Die Analyse läuft in zwei Grok-Aufrufen: (1) Absender + Artikelprüfung inkl. JSON-Block `<!--GA_IV_ARTICLES-->`, (2) Antwortbrief. Wissensbasis: 15 GA-IV-Artikel in `lib/knowledge/ga-iv-articles.ts`, Prüfauftrag in `lib/systemPrompt.ts`.
+Die Dokumenten-Auswertung (Grok) ist derzeit **deaktiviert**: Wissensbasis und Auswertungs-Prompts wurden entfernt. Bis zur neuen Konfiguration liefert `POST /api/analyze` den Status **503** mit der Meldung *„KI-Analyse ist nicht konfiguriert …“*.
 
-- **Mit `GROK_API_KEY`:** Live-Analyse über xAI Grok (Temperature Artikel-Call 0,2, Brief 0,3).
-- **Ohne Key:** Mock-Antwort aus `lib/mockData.ts`.
-- **Schalter:** `ANALYSIS_PROMPTS_CONFIGURED` in `lib/analysisConfig.ts` (bei `false` → HTTP 503).
+Reaktivierung: Prüfauftrag und Prompts neu anlegen, `ANALYSIS_PROMPTS_CONFIGURED` in `lib/analysisConfig.ts` auf `true` setzen und `lib/aiClient.ts` wieder anbinden.
 
-Tests: `npm run test:articles`
+Tests (Parser-Infrastruktur): `npm run test:articles`
 
 ## API
 
@@ -170,11 +168,9 @@ app/
 components/             # UI-Komponenten
 lib/
   auth/                 # Session, Credentials, Middleware-Hilfen
-  knowledge/            # GA-IV-Wissensdatenbank (15 Artikel)
-  systemPrompt.ts       # Prüfauftrag + technische JSON-Regeln
-  prompts/              # Grok-Systemnachrichten (Artikel-Call, Brief)
+  knowledge/            # GA-IV-Wissensbasis (derzeit leer)
   analysisConfig.ts     # Schalter: Prompts konfiguriert ja/nein
-  aiClient.ts           # Zwei-Call-Grok-Pipeline
+  aiClient.ts           # KI-Analyse (derzeit deaktiviert)
 middleware.ts           # Route-Schutz bei aktivem Auth
 hooks/                  # Upload-Workflow
 types/                  # TypeScript-Typen
