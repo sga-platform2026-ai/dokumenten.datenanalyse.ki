@@ -62,14 +62,25 @@ Die Datei **`.env.local`** ist bereits im Projekt vorhanden; tragen Sie dort Ihr
 | `AUTH_PASSWORD` | Nein (ja für Login) | Passwort für den Zugangsschutz |
 | `AUTH_SECRET` | Nein (ja für Login) | Geheimer Schlüssel für signierte Session-Cookies (mind. 32 Zeichen) |
 
-**Vercel:** nur `GROK_API_KEY` setzen; Modell und Parameter kommen aus [`config/Grok-Konfiguration.md`](config/Grok-Konfiguration.md).
+**Vercel:** `GROK_API_KEY` und optional die drei `AUTH_*`-Variablen für den Login (siehe [docs/vercel-login.md](docs/vercel-login.md)). Modell und Parameter: [`config/Grok-Konfiguration.md`](config/Grok-Konfiguration.md).
 
 ## Zugangsschutz (optional)
 
 Die App kann mit einem einfachen Benutzername/Passwort-Login geschützt werden. Dafür müssen **alle drei** Variablen `AUTH_USERNAME`, `AUTH_PASSWORD` und `AUTH_SECRET` gesetzt sein (`AUTH_SECRET` mindestens 32 Zeichen).
 
-- **Nicht alle gesetzt:** Die App läuft ohne Login (wie bisher).
+- **Nicht alle gesetzt:** Die App läuft ohne Login (kein Redirect auf `/login`).
 - **Alle gesetzt:** Middleware schützt alle Routen außer `/login`, `/api/auth/*` und statischen Assets. Die Anmeldung erfolgt über `/login`; die Session wird als httpOnly-Cookie (HMAC SHA-256) gespeichert.
+
+**Vercel einrichten:** Schritt-für-Schritt in [docs/vercel-login.md](docs/vercel-login.md).
+
+Status prüfen:
+
+```bash
+npm run check:auth
+npm run check:auth -- https://ihre-domain.vercel.app
+```
+
+Oder im Browser: `https://ihre-domain.vercel.app/api/auth/status` → `{ "enabled": true, "reason": null }`
 
 `AUTH_SECRET` lokal erzeugen:
 
