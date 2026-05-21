@@ -1,23 +1,63 @@
 /** Zeilenbasierte Paginierung für DIN-A4-Briefe (Vorschau und PDF). */
 
+import { classifyLetterLine } from "@/lib/letterLineStyle";
+
 export interface LetterPaginationConfig {
   /** Maximale Zeichen pro Zeile (ungefähr, nach Silbentrennung/Wortumbruch). */
   maxCharsPerLine: number;
   /** Maximale Textzeilen pro Seite (Leerzeilen zählen halb). */
   maxLinesPerPage: number;
+  /** Hartes Limit fuer gerenderte Zeilen pro Seite (Vorschau). */
+  maxPhysicalLinesPerPage?: number;
 }
 
 /** Entspricht etwa jsPDF Helvetica 11pt auf breiterer Textspalte. */
 export const PDF_LETTER_PAGINATION: LetterPaginationConfig = {
-  maxCharsPerLine: 102,
-  maxLinesPerPage: 44,
+  maxCharsPerLine: 108,
+  maxLinesPerPage: 48,
 };
 
 /** Entspricht der `.sheet`-Vorschau (Newsreader 14.5px, Innenabstand). */
 export const PREVIEW_LETTER_PAGINATION: LetterPaginationConfig = {
-  maxCharsPerLine: 96,
-  maxLinesPerPage: 34,
+  maxCharsPerLine: 102,
+  maxLinesPerPage: 42,
+  maxPhysicalLinesPerPage: 41,
 };
+
+const ARTICLE_LINE_PATTERN = /^Artikel\s+.+\s+GA\s+IV/iu;
+
+interface PaginationContext {
+  beforeAbsender: boolean;
+  previousLine: string | null;
+}
+
+/** Schätzt die sichtbare Zeilenhöhe je Textzeile für die Seitenaufteilung. */
+export function estimateVisualLineCost(
+  line: string,
+  context: PaginationContext,
+): number {
+  if (line.length === 0) {
+    return 0.3;
+  }
+
+  if (ARTICLE_LINE_PATTERN.test(line.trim())) {
+    return 1.35;
+  }
+
+  const style = classifyLetterLine(line, context);
+  switch (style.kind) {
+    case "title-tight":
+      return 0.68;
+    case "section":
+    case "az-label":
+      return 1.08;
+    case "betreff":
+    case "grundlage":
+      return 1.1;
+    default:
+      return 1;
+  }
+}
 
 /** Bricht einen Absatz an Wortgrenzen um. */
 export function wrapParagraph(paragraph: string, maxCharsPerLine: number): string[] {
@@ -84,6 +124,8 @@ export function paginateLetterText(
   const pages: string[][] = [];
   let currentPage: string[] = [];
   let usedLines = 0;
+  let beforeAbsender = true;
+  let previousLine: string | null = null;
 
   const flushPage = () => {
     if (currentPage.length > 0) {
@@ -94,14 +136,27 @@ export function paginateLetterText(
   };
 
   for (const line of logicalLines) {
-    const lineCost = line.length === 0 ? 0.5 : 1;
+    const context: PaginationContext = { beforeAbsender, previousLine };
+    const lineCost = estimateVisualLineCost(line, context);
+    const physicalLimit = config.maxPhysicalLinesPerPage ?? Number.POSITIVE_INFINITY;
 
-    if (usedLines + lineCost > config.maxLinesPerPage && currentPage.length > 0) {
+    if (
+      currentPage.length > 0 &&
+      (usedLines + lineCost > config.maxLinesPerPage ||
+        currentPage.length >= physicalLimit)
+    ) {
       flushPage();
     }
 
     currentPage.push(line);
     usedLines += lineCost;
+
+    if (line.trim() === "Absender") {
+      beforeAbsender = false;
+    }
+    if (line.trim().length > 0) {
+      previousLine = line;
+    }
   }
 
   flushPage();

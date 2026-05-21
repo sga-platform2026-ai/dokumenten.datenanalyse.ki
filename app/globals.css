@@ -480,15 +480,15 @@ h1.page-title {
     0 30px 60px -30px rgba(20,35,59,.35),
     0 60px 100px -60px rgba(20,35,59,.25);
   aspect-ratio: 1 / 1.414;
-  padding: 82px 68px 118px;
+  padding: 68px 58px 70px;
   font-family: 'Newsreader', Georgia, serif;
-  font-size: 14.5px; line-height: 1.5; color: #1a1a1a;
+  font-size: 14.5px; line-height: 1.45; color: #1a1a1a;
   position: relative;
   border-radius: 2px;
   overflow: hidden;
 }
 .sheet-page-label {
-  position: absolute; right: 36px; bottom: 36px;
+  position: absolute; right: 36px; bottom: 22px;
   font-family: 'Inter', sans-serif;
   font-size: 10.5px; color: #888;
   letter-spacing: .04em;
@@ -520,14 +520,14 @@ h1.page-title {
   color: #666; font-weight: 400; letter-spacing: .04em; margin-top: 4px;
 }
 .sheet .anrede { margin-top: 26px }
-.sheet .body p { margin: 0 0 5px; text-align: left; hyphens: auto }
+.sheet .body p { margin: 0 0 3px; text-align: left; hyphens: auto }
 .sheet .body p.letter-title-line {
   margin: 0 0 1px;
   line-height: 1.32;
 }
 .sheet .body p.letter-section {
   font-weight: 600;
-  margin: 14px 0 2px;
+  margin: 10px 0 2px;
 }
 .sheet .body p.letter-az-label,
 .sheet .body p.letter-az-value,
@@ -535,11 +535,11 @@ h1.page-title {
 .sheet .body p.letter-grundlage {
   font-weight: 600;
 }
-.sheet .body p.letter-az-label { margin: 14px 0 2px; }
-.sheet .body p.letter-az-value { margin: 0 0 8px; }
-.sheet .body p.letter-betreff { margin: 12px 0 8px; }
-.sheet .body p.letter-grundlage { margin: 0 0 8px; }
-.sheet .body p.letter-body { margin: 0 0 6px; text-align: justify; }
+.sheet .body p.letter-az-label { margin: 10px 0 2px; }
+.sheet .body p.letter-az-value { margin: 0 0 6px; }
+.sheet .body p.letter-betreff { margin: 10px 0 6px; }
+.sheet .body p.letter-grundlage { margin: 0 0 6px; }
+.sheet .body p.letter-body { margin: 0 0 4px; text-align: justify; }
 .sheet .body .quote {
   border-left: 2px solid #b48a3a;
   padding: 6px 0 6px 14px; margin: 14px 0;
