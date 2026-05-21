@@ -11,7 +11,7 @@ reasoning_effort: high
 temperature: 0.0
 max_tokens: 2048
 requestTimeoutMs: 180000
-analysisCacheVersion: v1.4-complaint-templates
+analysisCacheVersion: v1.4-leiter-vorlage
 
 retryArticleThreshold: 2
 ---
@@ -63,7 +63,7 @@ Nach Aenderung an `.env.local`: Dev-Server neu starten (`npm run dev`).
 | Grok | Ein-Call fuer strukturierte Schreiben-Analyse |
 | Systemprompt | `config/GA-IV-Systemprompt.md` |
 | Wissensbasis | `config/GA-IV-Wissensdatenbank.md` |
-| Beschwerdevorlagen | lokal aus `config/GA-IV-Beschwerde-Vorlagen.md`, kein freier LLM-Brief |
+| Beschwerdevorlagen | eine Vorlage (Leiter) aus `config/GA-IV-Beschwerde-Vorlagen.md`, kein freier LLM-Brief |
 
 ### Cache
 

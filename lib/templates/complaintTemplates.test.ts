@@ -32,10 +32,10 @@ Datum des Schreibens:
 Artikel 7 Abs. 2 GA IV - Verbot der Entrechtung - Anrede
 <!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"7-2","violated":true,"reason":"Anrede"}]}<!--/GA_IV_ARTICLES-->`;
 
-test("loadComplaintTemplatesFromFile liefert drei Vorlagen aus Markdown", () => {
+test("loadComplaintTemplatesFromFile liefert die Leiter-Vorlage aus Markdown", () => {
   const templates = loadComplaintTemplatesFromFile();
-  assert.equal(templates.length, 3);
-  assert.match(templates[0]?.title ?? "", /Sachbearbeiter/u);
+  assert.equal(templates.length, 1);
+  assert.match(templates[0]?.title ?? "", /Leiter/u);
   assert.match(templates[0]?.body ?? "", /\{\{ABSENDER_NAME\}\}/u);
 });
 
@@ -62,6 +62,8 @@ test("generateComplaintLettersFromAnalysis befuellt Absender und Behoerde", () =
   assert.match(letters, /Musterstrasse 1/u);
   assert.match(letters, /10115 Berlin/u);
   assert.match(letters, /Beispielamt Berlin/u);
+  assert.match(letters, /Dr\. Anna Leiterin/u);
+  assert.doesNotMatch(letters, /Max Mustermann/u);
   assert.match(letters, /AZ-99\/2026/u);
   assert.match(letters, /Artikel 7 Abs\. 2 GA IV/u);
   assert.doesNotMatch(letters, /\{\{ABSENDER_NAME\}\}/u);

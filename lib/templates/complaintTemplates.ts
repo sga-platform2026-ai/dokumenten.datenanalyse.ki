@@ -80,7 +80,6 @@ function fillTemplate(
     "{{ABSENDER_STRASSE}}": sender.senderStreet,
     "{{ABSENDER_PLZ_ORT}}": sender.senderPostalCity,
     "{{BEHOERDE_VOLLER_NAME_UND_ADRESSE}}": valueOrFallback(parsed.authority),
-    "{{SACHBEARBEITER_VOLL}}": valueOrFallback(parsed.clerk),
     "{{LEITER_VOLL}}": valueOrFallback(parsed.leader),
     "{{AKTENZEICHEN}}": valueOrFallback(parsed.caseNumber),
     "{{VERLETZTE_ARTIKEL}}": formatArticlesForTemplate(parsed.articles),

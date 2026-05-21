@@ -141,7 +141,8 @@ Der Code liest den Prompt über [`lib/systemPrompt.ts`](lib/systemPrompt.ts) und
 
 - **Ein Grok-Aufruf** pro Dokument für die strukturierte Schreiben-Analyse
 - Beschwerdevorlagen werden danach lokal aus der Analyse befüllt; kein frei formulierter LLM-Brief
-- Ablauf: Upload → Lesbarkeit → **Schreiben analysieren** → Analyse-Karte → Beschwerdevorlagen
+- Eine Beschwerdevorlage (linksbündig an den Leiter der Behörde) in [`config/GA-IV-Beschwerde-Vorlagen.md`](config/GA-IV-Beschwerde-Vorlagen.md)
+- Ablauf: Upload → Lesbarkeit → **Schreiben analysieren** → Analyse-Karte → Beschwerdevorlage
 - Ohne `GROK_API_KEY`: Mock-Daten
 
 Tests: `npm run test:articles`
