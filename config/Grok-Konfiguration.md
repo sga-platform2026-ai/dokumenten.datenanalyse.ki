@@ -4,13 +4,14 @@
 # API-Key NICHT hier eintragen → nur in .env.local als GROK_API_KEY
 # =============================================================================
 
+promptVersion: 1.2
 apiUrl: https://api.x.ai/v1/chat/completions
 model: grok-4.3
 reasoning_effort: high
-temperature: 0
-max_tokens: 8192
+temperature: 0.0
+max_tokens: 2048
 requestTimeoutMs: 180000
-analysisCacheVersion: v10-ein-call
+analysisCacheVersion: v1.2-grok-4.3
 
 retryArticleThreshold: 2
 ---
@@ -42,11 +43,12 @@ Nach Änderung an `.env.local`: Dev-Server neu starten (`npm run dev`).
 
 | Parameter | Wert | Bedeutung |
 |-----------|------|-----------|
+| `promptVersion` | `1.2` | Prompt-/Konfigurationsversion (Dokumentation) |
 | `apiUrl` | `https://api.x.ai/v1/chat/completions` | xAI-Endpunkt |
 | `model` | `grok-4.3` | Modell |
 | `reasoning_effort` | `high` | Reasoning-Aufwand |
-| `temperature` | `0` | Analyse-Call |
-| `max_tokens` | `8192` | Maximale Antwortlänge |
+| `temperature` | `0.0` | Analyse-Call |
+| `max_tokens` | `2048` | Maximale Antwortlänge |
 | `requestTimeoutMs` | `180000` | Timeout (ms) |
 | `retryArticleThreshold` | `2` | Retry wenn weniger Artikel erkannt |
 

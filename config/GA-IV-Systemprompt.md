@@ -1,5 +1,5 @@
 ---
-version: 1
+version: 1.2
 ---
 
 # Systemprompt – Verhalten und Analysevorgaben
