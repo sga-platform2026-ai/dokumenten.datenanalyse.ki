@@ -1,5 +1,10 @@
 ---
-version: 1.2
+# Systemprompt – Single Source of Truth
+# Alles UNTERHALB dieses Blocks (Markdown nach ---) wird an Grok gesendet.
+# Grok-API (Modell, Temperatur, Tokens): config/Grok-Konfiguration.md
+# Fachwissen (15 Artikel): config/GA-IV-Wissensdatenbank.md
+# Nach Aenderungen: version erhoehen + analysisCacheVersion in Grok-Konfiguration anpassen
+version: 1.3
 ---
 
 # Systemprompt – Verhalten und Analysevorgaben

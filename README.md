@@ -115,6 +115,27 @@ Schlecht lesbare Scans liefern die Meldung: *„Dokument nicht ausreichend lesba
 
 Key testen: `npm run test:grok` · Wissens-MD erzeugen: `npm run gen:knowledge-md`
 
+## Systemprompt ändern
+
+Den Systemprompt bearbeiten Sie in [`config/GA-IV-Systemprompt.md`](config/GA-IV-Systemprompt.md) — **alles unterhalb** des YAML-Frontmatters (`---` … `---`).
+
+| Was | Datei |
+|-----|--------|
+| Verhalten, Regeln, Ausgabestruktur | [`config/GA-IV-Systemprompt.md`](config/GA-IV-Systemprompt.md) |
+| Fachwissen (15 GA-IV-Artikel) | [`config/GA-IV-Wissensdatenbank.md`](config/GA-IV-Wissensdatenbank.md) |
+| Grok-API (Modell, Temperatur, Tokens) | [`config/Grok-Konfiguration.md`](config/Grok-Konfiguration.md) |
+
+Nach einer Prompt-Änderung:
+
+1. `version` im Frontmatter von `GA-IV-Systemprompt.md` erhöhen
+2. `analysisCacheVersion` in `Grok-Konfiguration.md` erhöhen (Cache-Invalidierung)
+3. Dev-Server neu starten (`npm run dev`)
+4. Commit + Push für Vercel-Redeploy
+
+Optional ohne Cache testen: `DISABLE_ANALYSIS_CACHE=1 npm run dev`
+
+Der Code liest den Prompt über [`lib/systemPrompt.ts`](lib/systemPrompt.ts) und hängt automatisch Wissensdatenbank sowie technische Analyse-Regeln an.
+
 ## KI-Analyse
 
 - **Ein Grok-Aufruf** pro Dokument (Schreiben analysieren), **kein Antwortbrief**
