@@ -40,7 +40,57 @@ function normalizeLineStarts(text: string): string {
   return text
     .replace(/\r\n/g, "\n")
     .replace(/^[ \t]*[-*•]\s*/gm, "")
+    .replace(/^\s*#{1,6}\s+/gm, "")
+    .replace(/\*\*(.*?)\*\*/gu, "$1")
+    .replace(/__(.*?)__/gu, "$1")
+    .replace(/\*\*/gu, "")
     .trim();
+}
+
+const LEADER_FIELD_LABELS = [
+  /Leiter der Behoerde\s*\/\s*Institution[^\n]*|Leiter der Behörde\s*\/\s*Institution[^\n]*/iu,
+  /Behördenleitung|Behordenleitung/iu,
+] as const;
+
+function captureLeader(
+  raw: string,
+  nextLabels: RegExp[],
+): string | undefined {
+  for (const label of LEADER_FIELD_LABELS) {
+    const value = captureField(
+      raw,
+      label,
+      nextLabels.filter(
+        (next) =>
+          !LEADER_FIELD_LABELS.some(
+            (leaderLabel) => leaderLabel.source === next.source,
+          ),
+      ),
+    );
+    if (value?.trim()) {
+      return value.trim();
+    }
+  }
+  return undefined;
+}
+
+export function formatLeaderDisplay(leader: string | undefined): string {
+  const trimmed = leader?.trim();
+  if (!trimmed || /^nicht angegeben$/iu.test(trimmed)) {
+    return "nicht angegeben";
+  }
+  return trimmed;
+}
+
+function cleanParsedLine(line: string): string {
+  return line
+    .replace(/\*\*/gu, "")
+    .replace(/^#+\s+/u, "")
+    .trim();
+}
+
+function isSectionHeading(line: string): boolean {
+  return /^\d+(?:\.\d+)*\.?\s+\S/u.test(line);
 }
 
 function captureField(
@@ -54,7 +104,7 @@ function captureField(
   let collecting = false;
 
   for (const rawLine of lines) {
-    const line = rawLine.trim();
+    const line = cleanParsedLine(rawLine);
     if (!line) {
       if (collecting && values.length > 0) {
         continue;
@@ -63,7 +113,10 @@ function captureField(
     }
 
     if (collecting) {
-      if (/^\d+\.\s/u.test(line) || nextLabels.some((next) => next.test(line))) {
+      if (
+        isSectionHeading(line) ||
+        nextLabels.some((next) => next.test(line))
+      ) {
         break;
       }
       values.push(line);
@@ -97,9 +150,10 @@ export function parseAnalysisSections(analysis: string): ParsedAnalysis {
     /Empfaenger|Empfänger/iu,
     /Behoerde\s*\/\s*Institution|Behörde\s*\/\s*Institution/iu,
     /Verantwortlicher Sachbearbeiter/iu,
-    /Leiter der Behoerde\s*\/\s*Institution|Leiter der Behörde\s*\/\s*Institution/iu,
+    ...LEADER_FIELD_LABELS,
     /Aktenzeichen\s*\/\s*Geschaeftszahl|Aktenzeichen\s*\/\s*Geschäftszahl|Aktenzeichen/iu,
     /Datum des Schreibens/iu,
+    /Verletzte Artikel/iu,
   ];
 
   const recipient = captureField(
@@ -117,10 +171,14 @@ export function parseAnalysisSections(analysis: string): ParsedAnalysis {
     /Verantwortlicher Sachbearbeiter/iu,
     fieldLabels.filter((next) => next.source !== "Verantwortlicher Sachbearbeiter"),
   );
-  const leader = captureField(
+  const leader = captureLeader(
     raw,
-    /Leiter der Behoerde\s*\/\s*Institution[^\n]*|Leiter der Behörde\s*\/\s*Institution[^\n]*/iu,
-    fieldLabels.filter((next) => !next.source.startsWith("Leiter")),
+    fieldLabels.filter(
+      (next) =>
+        !LEADER_FIELD_LABELS.some(
+          (leaderLabel) => leaderLabel.source === next.source,
+        ),
+    ),
   );
   const caseNumber = captureField(
     raw,

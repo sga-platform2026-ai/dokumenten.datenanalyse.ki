@@ -25,16 +25,20 @@ export default function HomePage() {
     fileName,
     errorMessage,
     result,
+    generatedLetter,
+    isGeneratingLetter,
     isProcessing,
     checkStates,
     progress,
     addFiles,
     removeFile,
     startDocumentCheck,
+    generateLetter,
     reset,
   } = useDocumentWorkflow();
 
   const resultRef = useRef<HTMLDivElement>(null);
+  const letterRef = useRef<HTMLDivElement>(null);
   const [debugEnabled, setDebugEnabled] = useState(false);
 
   useEffect(() => {
@@ -42,6 +46,12 @@ export default function HomePage() {
       resultRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [status]);
+
+  useEffect(() => {
+    if (generatedLetter && letterRef.current) {
+      letterRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [generatedLetter]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -120,6 +130,9 @@ export default function HomePage() {
               analysis={result.analysis}
               fileName={fileName}
               mock={result.metadata.mock}
+              onGenerateLetter={() => void generateLetter()}
+              isGeneratingLetter={isGeneratingLetter}
+              letterGenerated={Boolean(generatedLetter)}
             />
           ) : status === "analyzing" ? (
             <aside className="card" id="data-card">
@@ -156,12 +169,16 @@ export default function HomePage() {
           />
         )}
 
-        {result?.letter && (
-          <LetterPreview
-            letter={result.letter}
-            mock={result.metadata.mock}
-            actions={<ActionBar letterText={result.letter} onReset={reset} />}
-          />
+        {generatedLetter && (
+          <div ref={letterRef}>
+            <LetterPreview
+              letter={generatedLetter}
+              mock={result?.metadata.mock}
+              actions={
+                <ActionBar letterText={generatedLetter} onReset={reset} />
+              }
+            />
+          </div>
         )}
       </main>
 

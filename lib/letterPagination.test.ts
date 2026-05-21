@@ -23,7 +23,10 @@ test("estimateVisualLineCost gewichtet Titelzeilen niedriger", () => {
 });
 
 test("paginateLetterText nutzt DIN-A4 Flaeche fuer Standardbrief kompakt", () => {
-  const letter = normalizeLetterText(createMockAnalyzeResponse().letter);
+  const mock = createMockAnalyzeResponse();
+  const letter = normalizeLetterText(
+    generateComplaintLettersFromAnalysis(mock.analysis),
+  );
   const pages = paginateLetterText(letter, PREVIEW_LETTER_PAGINATION);
 
   assert.ok(pages.length <= 2);

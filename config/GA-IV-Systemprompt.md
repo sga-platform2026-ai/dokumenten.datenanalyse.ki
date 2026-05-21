@@ -29,7 +29,7 @@ Halte die Reihenfolge exakt ein:
    - Empfaenger (geschuetzte Zivilperson / Absender der Beschwerde): Name, Anschrift, E-Mail, Telefon
    - Behoerde / Institution: vollstaendiger Name und Adresse
    - Verantwortlicher Sachbearbeiter: Vorname Nachname, Funktion, E-Mail, Telefon/Durchwahl
-   - Leiter der Behoerde / Institution (Gesamtverantwortung): vollstaendiger Name und exakte Amtsbezeichnung; bei Bedarf recherchieren und als recherchiert kennzeichnen
+   - Leiter der Behoerde / Institution (Gesamtverantwortung): vollstaendiger Name und exakte Amtsbezeichnung; bei Bedarf recherchieren und als recherchiert kennzeichnen. Das Feld darf nicht mit "nicht angegeben" ausgegeben werden, wenn die Behoerde im Schreiben oder oeffentlich identifizierbar ist.
    - Aktenzeichen / Geschaeftszahl, falls vorhanden
    - Datum des Schreibens, falls vorhanden
 3. Grundannahme ausdruecklich anwenden: Die angeschriebene Person ist geschuetzte Zivilperson nach Artikel 4 GA IV.
@@ -71,7 +71,7 @@ Verantwortlicher Sachbearbeiter:
 [Vorname Nachname, Funktion, E-Mail, Telefon/Durchwahl oder "nicht angegeben"]
 
 Leiter der Behoerde / Institution (Gesamtverantwortung):
-[Vorname Nachname, genaue Amtsbezeichnung] - recherchiert
+[Vorname Nachname, genaue Amtsbezeichnung] - recherchiert (Pflichtfeld; nur wenn wirklich nicht ermittelbar: nicht angegeben)
 
 Aktenzeichen / Geschaeftszahl:
 [genaue Nummer oder "nicht angegeben"]

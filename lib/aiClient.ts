@@ -15,7 +15,6 @@ import {
   applyNormalizedArticlesToAnalysis,
   type AnalyzeArticlesResult,
 } from "@/lib/structuredArticles";
-import { generateComplaintLettersFromAnalysis } from "@/lib/templates/complaintTemplates";
 import type { AnalyzeDiagnostics, AnalyzeResponse } from "@/types";
 
 const RAW_PREVIEW_CHARS = 400;
@@ -110,6 +109,7 @@ export async function analyzeDocument(
     if (cached) {
       return {
         ...cached,
+        letter: "",
         metadata: { ...cached.metadata, cached: true },
       };
     }
@@ -177,7 +177,7 @@ Liefere Abschnitt 1 und 2 inkl. Pflicht-JSON. Kein frei formulierter Antwortbrie
 
     const result: AnalyzeResponse = {
       analysis: parsed.displayAnalysis,
-      letter: generateComplaintLettersFromAnalysis(parsed.displayAnalysis),
+      letter: "",
       metadata: {
         model: grokConfig.model,
         provider: "grok",

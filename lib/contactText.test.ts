@@ -43,4 +43,25 @@ Artikel 7 Abs. 2 GA IV – Test
 
   assert.match(parsed.recipient ?? "", /Frau Beispiel/);
   assert.match(parsed.recipient ?? "", /beispiel@mail.de/);
+  assert.equal(parsed.leader, "Dr. Anna Beispiel – recherchiert");
+});
+
+test("parseAnalysisSections erkennt Behördenleitung und Markdown-Labels", () => {
+  const parsed = parseAnalysisSections(`1. Absender-Identifikation
+
+**Behördenleitung:**
+Dr. Christoph Hillenbrand, Regierungspräsident - recherchiert
+
+Aktenzeichen / Geschäftszahl:
+AZ-1
+
+2. Verletzte Artikel
+
+Artikel 1 GA IV - Test
+<!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"1","violated":true,"reason":"Test"}]}<!--/GA_IV_ARTICLES-->`);
+
+  assert.equal(
+    parsed.leader,
+    "Dr. Christoph Hillenbrand, Regierungspräsident - recherchiert",
+  );
 });

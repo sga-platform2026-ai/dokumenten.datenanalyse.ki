@@ -1,5 +1,4 @@
 import { applyNormalizedArticlesToAnalysis } from "@/lib/structuredArticles";
-import { generateComplaintLettersFromAnalysis } from "@/lib/templates/complaintTemplates";
 import type { AnalyzeResponse } from "@/types";
 
 export function createMockAnalyzeResponse(fileName?: string): AnalyzeResponse {
@@ -35,7 +34,7 @@ Artikel 27 GA IV - Schutz der Ehre - Eingriff in die persoenliche Sphaere${refer
 
   return {
     analysis: displayAnalysis,
-    letter: generateComplaintLettersFromAnalysis(displayAnalysis),
+    letter: "",
     metadata: {
       model: "mock",
       provider: "mock",

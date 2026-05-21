@@ -2,15 +2,28 @@
 
 import { useState } from "react";
 import { ContactValue } from "@/components/ContactValue";
-import { parseAnalysisSections } from "@/lib/parseAiResponse";
+import {
+  formatLeaderDisplay,
+  parseAnalysisSections,
+} from "@/lib/parseAiResponse";
 
 interface AnalysisResultProps {
   analysis: string;
   fileName?: string | null;
   mock?: boolean;
+  onGenerateLetter?: () => void;
+  isGeneratingLetter?: boolean;
+  letterGenerated?: boolean;
 }
 
-export function AnalysisResult({ analysis, fileName, mock }: AnalysisResultProps) {
+export function AnalysisResult({
+  analysis,
+  fileName,
+  mock,
+  onGenerateLetter,
+  isGeneratingLetter = false,
+  letterGenerated = false,
+}: AnalysisResultProps) {
   const parsed = parseAnalysisSections(analysis);
   const articleCount = parsed.articles.length;
   const affectedCount = parsed.affected.length;
@@ -70,12 +83,10 @@ export function AnalysisResult({ analysis, fileName, mock }: AnalysisResultProps
           </>
         )}
 
-        {parsed.leader && (
-          <>
-            <dt>Behördenleitung</dt>
-            <dd style={{ fontWeight: 400, fontSize: 13, color: "var(--ink-2)" }}>{parsed.leader}</dd>
-          </>
-        )}
+        <dt>Behördenleitung</dt>
+        <dd style={{ fontWeight: 400, fontSize: 13, color: "var(--ink-2)" }}>
+          {formatLeaderDisplay(parsed.leader)}
+        </dd>
 
         <dt>GA IV</dt>
         <dd>
@@ -202,6 +213,28 @@ export function AnalysisResult({ analysis, fileName, mock }: AnalysisResultProps
           >
             Thematisch einschlägige Artikel ohne konkreten Bezug zum Schreiben.
           </p>
+        </div>
+      )}
+
+      {onGenerateLetter && (
+        <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={onGenerateLetter}
+            disabled={isGeneratingLetter || letterGenerated}
+          >
+            {isGeneratingLetter
+              ? "Antwortschreiben wird erstellt …"
+              : letterGenerated
+                ? "Antwortschreiben erstellt"
+                : "Antwortschreiben erstellen"}
+          </button>
+          {!letterGenerated && (
+            <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "var(--muted)", lineHeight: 1.45 }}>
+              Der Entwurf wird erst nach Klick aus der Analyse und den Vorlagen erzeugt.
+            </p>
+          )}
         </div>
       )}
     </aside>

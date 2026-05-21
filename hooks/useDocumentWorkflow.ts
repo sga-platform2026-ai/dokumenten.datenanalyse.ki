@@ -50,6 +50,8 @@ export function useDocumentWorkflow() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
+  const [generatedLetter, setGeneratedLetter] = useState<string | null>(null);
+  const [isGeneratingLetter, setIsGeneratingLetter] = useState(false);
   const [checkStates, setCheckStates] = useState<CheckStates>({});
   const [progress, setProgress] = useState(0);
   const [extractedText, setExtractedText] = useState<string>("");
@@ -68,6 +70,7 @@ export function useDocumentWorkflow() {
 
     setErrorMessage(null);
     setResult(null);
+    setGeneratedLetter(null);
 
     const accepted: QueuedFile[] = [];
     const errors: string[] = [];
@@ -139,6 +142,7 @@ export function useDocumentWorkflow() {
 
     setErrorMessage(null);
     setResult(null);
+    setGeneratedLetter(null);
     setCheckStates({});
     setProgress(0);
     setExtractedText("");
@@ -237,12 +241,47 @@ export function useDocumentWorkflow() {
     }
   }, [queuedFiles, setCheck]);
 
+  const generateLetter = useCallback(async () => {
+    if (!result?.analysis) {
+      return;
+    }
+
+    setIsGeneratingLetter(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/generate-letter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysis: result.analysis }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? "Antwortschreiben konnte nicht erstellt werden.");
+      }
+
+      const data = (await response.json()) as { letter: string };
+      setGeneratedLetter(data.letter);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Antwortschreiben konnte nicht erstellt werden.",
+      );
+    } finally {
+      setIsGeneratingLetter(false);
+    }
+  }, [result?.analysis]);
+
   const reset = useCallback(() => {
     setStatus("idle");
     setQueuedFiles([]);
     setFileName(null);
     setErrorMessage(null);
     setResult(null);
+    setGeneratedLetter(null);
+    setIsGeneratingLetter(false);
     setCheckStates({});
     setProgress(0);
     setExtractedText("");
@@ -254,12 +293,15 @@ export function useDocumentWorkflow() {
     fileName,
     errorMessage,
     result,
+    generatedLetter,
+    isGeneratingLetter,
     isProcessing,
     checkStates,
     progress,
     addFiles,
     removeFile,
     startDocumentCheck,
+    generateLetter,
     reset,
   };
 }
