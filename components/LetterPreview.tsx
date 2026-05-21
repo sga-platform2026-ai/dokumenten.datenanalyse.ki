@@ -3,6 +3,10 @@ import {
   PREVIEW_LETTER_PAGINATION,
   paginateLetterText,
 } from "@/lib/letterPagination";
+import {
+  classifyLetterLine,
+  cssClassForLetterLineKind,
+} from "@/lib/letterLineStyle";
 import { normalizeLetterText } from "@/lib/normalizeLetter";
 
 interface LetterPreviewProps {
@@ -25,6 +29,9 @@ export function LetterPreview({ letter, mock, actions }: LetterPreviewProps) {
   const body = normalizeLetterText(letter);
   const pages = paginateLetterText(body, PREVIEW_LETTER_PAGINATION);
   const pageCount = pages.length;
+
+  let beforeAbsender = true;
+  let previousLine: string | null = null;
 
   return (
     <section className="letter-wrap fade-up" aria-live="polite">
@@ -67,7 +74,26 @@ export function LetterPreview({ letter, mock, actions }: LetterPreviewProps) {
                 if (line.trim() === "") {
                   return <br key={lineIndex} />;
                 }
-                return <p key={lineIndex}>{line}</p>;
+
+                const style = classifyLetterLine(line, {
+                  beforeAbsender,
+                  previousLine,
+                });
+
+                if (line.trim() === "Absender") {
+                  beforeAbsender = false;
+                }
+                previousLine = line;
+
+                return (
+                  <p
+                    key={lineIndex}
+                    className={cssClassForLetterLineKind(style.kind)}
+                    style={style.bold ? { fontWeight: 600 } : undefined}
+                  >
+                    {line}
+                  </p>
+                );
               })}
             </div>
           </article>

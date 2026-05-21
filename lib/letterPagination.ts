@@ -16,7 +16,7 @@ export const PDF_LETTER_PAGINATION: LetterPaginationConfig = {
 /** Entspricht der `.sheet`-Vorschau (Newsreader 14.5px, Innenabstand). */
 export const PREVIEW_LETTER_PAGINATION: LetterPaginationConfig = {
   maxCharsPerLine: 72,
-  maxLinesPerPage: 38,
+  maxLinesPerPage: 34,
 };
 
 /** Bricht einen Absatz an Wortgrenzen um. */

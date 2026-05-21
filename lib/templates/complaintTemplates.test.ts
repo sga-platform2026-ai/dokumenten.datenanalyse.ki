@@ -68,6 +68,7 @@ test("generateComplaintLettersFromAnalysis befuellt Absender und Behoerde", () =
   assert.match(letters, /Artikel 7 Abs\. 2 GA IV/u);
   assert.doesNotMatch(letters, /\{\{ABSENDER_NAME\}\}/u);
   assert.doesNotMatch(letters, /\{\{DATUM\}\}/u);
+  assert.doesNotMatch(letters, /## Vorlage GA IV Beschwerde/u);
   assert.match(letters, /21\.05\.2026/u);
   assert.match(letters, /Berlin/u);
 });

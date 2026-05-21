@@ -101,9 +101,6 @@ export function generateComplaintLettersFromAnalysis(
   const templates = loadComplaintTemplatesFromFile();
 
   return templates
-    .map(({ title, body }) => {
-      const filled = fillTemplate(body, analysis, data);
-      return `## ${title}\n\n${filled}`;
-    })
+    .map(({ body }) => fillTemplate(body, analysis, data))
     .join("\n\n---\n\n");
 }
