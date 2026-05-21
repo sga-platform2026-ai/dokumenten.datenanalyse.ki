@@ -5,7 +5,7 @@ import { letterPdfFileName, normalizeLetterText } from "@/lib/normalizeLetter";
 
 const PAGE_WIDTH_MM = 210;
 const PAGE_HEIGHT_MM = 297;
-const MARGIN_MM = 25;
+const MARGIN_MM = 20;
 const BOTTOM_MARGIN_MM = 32;
 const LINE_HEIGHT_MM = 5.5;
 const FONT_SIZE_PT = 11;

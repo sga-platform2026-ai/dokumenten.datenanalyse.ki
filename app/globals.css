@@ -349,6 +349,16 @@ h1.page-title {
 .processing-panel-hint {
   margin: 6px 0 0; font-size: 13px; color: var(--muted); line-height: 1.45;
 }
+.processing-hint {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--paper-2), var(--paper));
+  border: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
 .processing-overlay {
   position: fixed; inset: 0; z-index: 100;
   display: flex; align-items: center; justify-content: center;
@@ -470,7 +480,7 @@ h1.page-title {
     0 30px 60px -30px rgba(20,35,59,.35),
     0 60px 100px -60px rgba(20,35,59,.25);
   aspect-ratio: 1 / 1.414;
-  padding: 82px 92px 118px;
+  padding: 82px 68px 118px;
   font-family: 'Newsreader', Georgia, serif;
   font-size: 14.5px; line-height: 1.5; color: #1a1a1a;
   position: relative;

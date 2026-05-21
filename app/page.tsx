@@ -7,8 +7,6 @@ import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { FileUpload } from "@/components/FileUpload";
 import { AppHeader } from "@/components/AppHeader";
 import { LetterPreview } from "@/components/LetterPreview";
-import { ProcessingOverlay } from "@/components/ProcessingOverlay";
-import { ProcessingPanel } from "@/components/ProcessingPanel";
 import { useDocumentWorkflow, CHECK_ITEMS } from "@/hooks/useDocumentWorkflow";
 import { getProcessingMessage } from "@/lib/processingMessages";
 
@@ -129,12 +127,7 @@ export default function HomePage() {
             <aside className="card" id="data-card">
               <div className="label">Erkannte Dokumentdaten</div>
               <h2 style={{ marginBottom: 14 }}>Übersicht</h2>
-              <ProcessingPanel
-                title={analyzingMsg.title}
-                hint={analyzingMsg.hint}
-                compact
-                progress={progress}
-              />
+              <p className="processing-hint">{analyzingMsg.hint}</p>
             </aside>
           ) : (
             <aside className="card" id="data-card">
@@ -167,14 +160,6 @@ export default function HomePage() {
           />
         )}
       </main>
-
-      {status === "analyzing" && analyzingMsg && (
-        <ProcessingOverlay
-          title={analyzingMsg.title}
-          hint={analyzingMsg.hint}
-          progress={progress}
-        />
-      )}
 
       <footer className="footer-note">
         <span>

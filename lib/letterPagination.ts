@@ -7,15 +7,15 @@ export interface LetterPaginationConfig {
   maxLinesPerPage: number;
 }
 
-/** Entspricht etwa jsPDF Helvetica 11pt auf 160 mm Textbreite. */
+/** Entspricht etwa jsPDF Helvetica 11pt auf breiterer Textspalte. */
 export const PDF_LETTER_PAGINATION: LetterPaginationConfig = {
-  maxCharsPerLine: 88,
+  maxCharsPerLine: 102,
   maxLinesPerPage: 44,
 };
 
 /** Entspricht der `.sheet`-Vorschau (Newsreader 14.5px, Innenabstand). */
 export const PREVIEW_LETTER_PAGINATION: LetterPaginationConfig = {
-  maxCharsPerLine: 72,
+  maxCharsPerLine: 96,
   maxLinesPerPage: 34,
 };
 

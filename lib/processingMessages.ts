@@ -12,7 +12,7 @@ export function getProcessingMessage(
     case "reading":
       return {
         title: "Dokument wird gelesen …",
-        hint: "Text wird aus der Datei extrahiert",
+        hint: "Das Einlesen kann je nach Dateigröße und Scanqualität einige Sekunden bis etwa eine Minute dauern.",
       };
     case "checking":
       return {
