@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnalysisResult } from "@/components/AnalysisResult";
+import { ActionBar } from "@/components/ActionBar";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { FileUpload } from "@/components/FileUpload";
 import { AppHeader } from "@/components/AppHeader";
+import { LetterPreview } from "@/components/LetterPreview";
 import { ProcessingOverlay } from "@/components/ProcessingOverlay";
 import { ProcessingPanel } from "@/components/ProcessingPanel";
 import { useDocumentWorkflow, CHECK_ITEMS } from "@/hooks/useDocumentWorkflow";
@@ -154,6 +156,14 @@ export default function HomePage() {
           <DiagnosticsPanel
             diagnostics={result.metadata.diagnostics}
             cached={result.metadata.cached}
+          />
+        )}
+
+        {result?.letter && (
+          <LetterPreview
+            letter={result.letter}
+            mock={result.metadata.mock}
+            actions={<ActionBar letterText={result.letter} onReset={reset} />}
           />
         )}
       </main>

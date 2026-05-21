@@ -34,10 +34,11 @@ const CHECKLIST_LINES = GA_IV_CANONICAL_ARTICLE_ORDER.map(
   (id) => `- ${id}: ${getArticleLabel(id)}`,
 ).join("\n");
 
-const ARTICLE_CALL_RULES = `SPEZIALISIERUNG – ANALYSE-CALL (ein Aufruf, kein Antwortbrief):
-Antworte NUR mit Abschnitt 1, Abschnitt 2, Abschnitt 5.2 inkl. Pflicht-JSON. KEIN Antwortbrief.
+const ARTICLE_CALL_RULES = `SPEZIALISIERUNG - ANALYSE-CALL (ein Aufruf, kein freier Antwortbrief):
+Antworte NUR mit Abschnitt 1 und Abschnitt 2 inkl. Pflicht-JSON. KEIN frei formulierter Antwortbrief.
+Die Beschwerdevorlagen werden nachgelagert lokal durch die Anwendung erzeugt.
 
-Prüfungsliste (IDs – für articleReviews jede ID bewerten):
+Pruefungsliste (IDs - fuer articleReviews jede ID bewerten):
 ${CHECKLIST_LINES}`;
 
 /** Vollständige Systemnachricht für den Grok-Analyse-Call. */

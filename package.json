@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test:grok": "tsx scripts/test-grok-key.ts",
     "test:articles": "tsx --test lib/structuredArticles.test.ts",
+    "test:templates": "tsx --test lib/templates/complaintTemplates.test.ts",
     "check:auth": "tsx scripts/check-auth-config.ts",
     "gen:knowledge-md": "tsx scripts/gen-ga-iv-wissensdatenbank-md.ts",
     "postinstall": "node scripts/copy-pdf-worker.mjs"

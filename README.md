@@ -1,6 +1,6 @@
 # Dokumentenprüfung GA IV
 
-Moderne Web-App zur Prüfung amtlicher Schreiben nach dem IV. Genfer Abkommen (GA IV). Nutzer laden Dokumente hoch; die App extrahiert Text, prüft die Lesbarkeit und erstellt per KI eine strukturierte GA-IV-Analyse (Ein-Call, ohne Antwortbrief).
+Moderne Web-App zur Prüfung amtlicher Schreiben nach dem IV. Genfer Abkommen (GA IV). Nutzer laden Dokumente hoch; die App extrahiert Text, prüft die Lesbarkeit, erstellt per KI eine strukturierte GA-IV-Analyse und erzeugt daraus lokal befüllte Beschwerdevorlagen.
 
 ## Tech-Stack
 
@@ -111,6 +111,7 @@ Schlecht lesbare Scans liefern die Meldung: *„Dokument nicht ausreichend lesba
 | Grok-API (Modell, Tokens, …) | [`config/Grok-Konfiguration.md`](config/Grok-Konfiguration.md) |
 | Systemprompt (Verhalten, Ausgabe) | [`config/GA-IV-Systemprompt.md`](config/GA-IV-Systemprompt.md) |
 | Wissensdatenbank (15 Artikel) | [`config/GA-IV-Wissensdatenbank.md`](config/GA-IV-Wissensdatenbank.md) |
+| Beschwerdevorlagen | [`config/GA-IV-Beschwerde-Vorlagen.md`](config/GA-IV-Beschwerde-Vorlagen.md) |
 | API-Key | `.env.local` → `GROK_API_KEY` |
 
 Key testen: `npm run test:grok` · Wissens-MD erzeugen: `npm run gen:knowledge-md`
@@ -138,8 +139,9 @@ Der Code liest den Prompt über [`lib/systemPrompt.ts`](lib/systemPrompt.ts) und
 
 ## KI-Analyse
 
-- **Ein Grok-Aufruf** pro Dokument (Schreiben analysieren), **kein Antwortbrief**
-- Ablauf: Upload → Lesbarkeit → **Schreiben analysieren** → Ergebnis in der Analyse-Karte
+- **Ein Grok-Aufruf** pro Dokument für die strukturierte Schreiben-Analyse
+- Beschwerdevorlagen werden danach lokal aus der Analyse befüllt; kein frei formulierter LLM-Brief
+- Ablauf: Upload → Lesbarkeit → **Schreiben analysieren** → Analyse-Karte → Beschwerdevorlagen
 - Ohne `GROK_API_KEY`: Mock-Daten
 
 Tests: `npm run test:articles`

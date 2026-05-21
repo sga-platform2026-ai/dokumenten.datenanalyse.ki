@@ -396,7 +396,7 @@ function getArticlesSectionBody(analysis: string): string {
 }
 
 function getSection2Body(analysis: string): string | null {
-  const marker = /2\.\s*Verletzte oder berührte Artikel[^\n]*/iu;
+  const marker = /2\.\s*Verletzte(?:\s+oder\s+berührte)?\s+Artikel[^\n]*/iu;
   if (!marker.test(analysis)) {
     return null;
   }
@@ -416,9 +416,16 @@ function getSection2Body(analysis: string): string | null {
 
 function splitArticleLine(line: string): ViolatedArticleInput | null {
   const dashIndex = line.indexOf("–");
+  const mojibakeDashIndex = line.indexOf("â€“");
   const hyphenIndex = line.indexOf("-");
   const splitIndex =
-    dashIndex > -1 ? dashIndex : hyphenIndex > -1 ? hyphenIndex : -1;
+    dashIndex > -1
+      ? dashIndex
+      : mojibakeDashIndex > -1
+        ? mojibakeDashIndex
+        : hyphenIndex > -1
+          ? hyphenIndex
+          : -1;
 
   if (splitIndex < 0) {
     const id = normalizeArticleId(line);

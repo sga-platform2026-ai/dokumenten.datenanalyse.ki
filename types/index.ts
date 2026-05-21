@@ -82,6 +82,8 @@ export interface ParsedAnalysis {
   authority?: string;
   clerk?: string;
   leader?: string;
+  caseNumber?: string;
+  documentDate?: string;
   articles: Array<{ article: string; reason: string }>;
   affected: Array<{ article: string; note?: string }>;
   raw: string;

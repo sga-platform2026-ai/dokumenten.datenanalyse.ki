@@ -15,6 +15,7 @@ import {
   applyNormalizedArticlesToAnalysis,
   type AnalyzeArticlesResult,
 } from "@/lib/structuredArticles";
+import { generateComplaintLettersFromAnalysis } from "@/lib/templates/complaintTemplates";
 import type { AnalyzeDiagnostics, AnalyzeResponse } from "@/types";
 
 const RAW_PREVIEW_CHARS = 400;
@@ -148,8 +149,8 @@ export async function analyzeDocument(
       const retryUser = `${userDocument}
 
 ---
-Zweiter Prüflauf: Erfasse vollständig alle Checklisten-Artikel (articleReviews für JEDE ID).
-Liefere Abschnitt 1, 2, 5.2 inkl. Pflicht-JSON. Kein Antwortbrief.`;
+Zweiter Prueflauf: Erfasse vollstaendig alle Checklisten-Artikel (articleReviews fuer JEDE ID).
+Liefere Abschnitt 1 und 2 inkl. Pflicht-JSON. Kein frei formulierter Antwortbrief.`;
 
       analysisRaw = await grokChatFromConfig({
         system,
@@ -176,7 +177,7 @@ Liefere Abschnitt 1, 2, 5.2 inkl. Pflicht-JSON. Kein Antwortbrief.`;
 
     const result: AnalyzeResponse = {
       analysis: parsed.displayAnalysis,
-      letter: "",
+      letter: generateComplaintLettersFromAnalysis(parsed.displayAnalysis),
       metadata: {
         model: grokConfig.model,
         provider: "grok",

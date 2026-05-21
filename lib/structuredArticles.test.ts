@@ -119,6 +119,21 @@ Artikel 27 GA IV – Ehre`;
   assert.equal(articles[2].id, "31");
 });
 
+test("applyNormalizedArticlesToAnalysis parst neuen Abschnitt 2 (Verletzte Artikel)", () => {
+  const raw = `1. Absender-Identifikation
+Behörde / Institution:
+Testamt
+
+2. Verletzte Artikel des IV. Genfer Abkommens
+Artikel 7 Abs. 2 GA IV - Verbot der Entrechtung - Anrede Herr
+Artikel 101 GA IV – Recht auf wirksame Beschwerde – Beschwerdeweg fehlt`;
+
+  const { articles } = applyNormalizedArticlesToAnalysis(raw);
+  assert.equal(articles.length, 2);
+  assert.equal(articles[0].id, "7-2");
+  assert.equal(articles[1].id, "101");
+});
+
 test("affected schließt bereits violated Artikel aus", () => {
   const raw = `<!--GA_IV_ARTICLES-->{"articleReviews":[{"id":"27","violated":true,"reason":"konkret"}],"potentiallyAffected":[{"id":"27","note":"doppelt"},{"id":"1","note":"allg."}]}<!--/GA_IV_ARTICLES-->`;
 
