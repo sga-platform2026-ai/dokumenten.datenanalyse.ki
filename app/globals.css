@@ -376,11 +376,11 @@ h1.page-title {
 .check[data-s="error"] { color: var(--danger) }
 .check[data-s="error"] .ic { background: rgba(176,72,72,.1); border-color: var(--danger) }
 .progress-bar {
-  height: 4px; background: var(--paper-2); border-radius: 2px; overflow: hidden;
+  height: 7px; background: var(--paper-2); border-radius: 3px; overflow: hidden;
   border: 1px solid var(--line);
 }
 .progress-bar-wrap .progress-bar { margin-top: 0 }
-.progress-bar-wrap:not(.processing-panel-progress) .progress-bar { margin-top: 18px }
+.progress-bar-wrap:not(.processing-panel-progress) .progress-bar { margin-top: 10px }
 .progress-bar > div {
   height: 100%; background: var(--blue); width: 0%;
   transition: width .35s ease;
@@ -399,7 +399,7 @@ h1.page-title {
   width: 100%; max-width: 280px;
 }
 .processing-panel-progress .progress-bar {
-  height: 6px; border-radius: 3px;
+  height: 9px; border-radius: 4px;
 }
 
 /* ── Doc data card ───────────────────────────────────── */

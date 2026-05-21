@@ -20,11 +20,9 @@ Die Analyse-Ausgabe aus `config/GA-IV-Systemprompt.md` wird in diese Vorlagen ue
 
 ## Vorlage GA IV Beschwerde - linksbuendig - an Leiter der Behoerde
 
-Diplomatische,
-zivilrechtliche,
-voelkerrechtlich zwingend
-wirksame
-Beschwerde, gemaess den Genfer Abkommen IV von 1949 (GA IV)
+Diplomatische, zivilrechtliche, voelkerrechtlich zwingend
+wirksame Beschwerde, gemaess
+den Genfer Abkommen IV von 1949 (GA IV)
 
 Absender
 {{ABSENDER_NAME}}

@@ -8,7 +8,6 @@ import { FileUpload } from "@/components/FileUpload";
 import { AppHeader } from "@/components/AppHeader";
 import { LetterPreview } from "@/components/LetterPreview";
 import { useDocumentWorkflow, CHECK_ITEMS } from "@/hooks/useDocumentWorkflow";
-import { getProcessingMessage } from "@/lib/processingMessages";
 
 function getNow(): string {
   const d = new Date();
@@ -36,7 +35,6 @@ export default function HomePage() {
   } = useDocumentWorkflow();
 
   const resultRef = useRef<HTMLDivElement>(null);
-  const analyzingMsg = getProcessingMessage(status);
   const [debugEnabled, setDebugEnabled] = useState(false);
 
   useEffect(() => {
@@ -123,11 +121,17 @@ export default function HomePage() {
               fileName={fileName}
               mock={result.metadata.mock}
             />
-          ) : status === "analyzing" && analyzingMsg ? (
+          ) : status === "analyzing" ? (
             <aside className="card" id="data-card">
               <div className="label">Erkannte Dokumentdaten</div>
               <h2 style={{ marginBottom: 14 }}>Übersicht</h2>
-              <p className="processing-hint">{analyzingMsg.hint}</p>
+              <div className="data-empty-state">
+                <div className="data-empty-icon">⌗</div>
+                Schreiben wird analysiert …
+                <div className="data-empty-sub">
+                  Felder werden nach Abschluss der Analyse befüllt.
+                </div>
+              </div>
             </aside>
           ) : (
             <aside className="card" id="data-card">

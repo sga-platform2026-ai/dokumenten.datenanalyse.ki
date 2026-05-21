@@ -245,7 +245,7 @@ export function FileUpload({
               );
             })}
           </div>
-          <ProgressBar value={progress} />
+          <ProgressBar value={progress} showLabel />
         </div>
       )}
 
